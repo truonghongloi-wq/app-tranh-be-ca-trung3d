@@ -293,7 +293,7 @@ class _ChatbotPageState extends State<ChatbotPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7F9),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         flexibleSpace: Container(
           decoration: const BoxDecoration(
@@ -380,7 +380,7 @@ class _ChatbotPageState extends State<ChatbotPage> {
           vertical: isImage ? 4 : 10,
         ),
         decoration: BoxDecoration(
-          color: isUser ? _primary : Colors.white,
+          color: isUser ? _primary : Theme.of(context).cardColor,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
@@ -404,7 +404,8 @@ class _ChatbotPageState extends State<ChatbotPage> {
             : Text(
                 msg.content,
                 style: TextStyle(
-                  color: isUser ? Colors.white : const Color(0xFF1A1A2E),
+                  color: isUser ? Colors.white
+                      : (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1A1A2E)),
                   fontSize: 14.5,
                   height: 1.45,
                 ),
@@ -420,7 +421,7 @@ class _ChatbotPageState extends State<ChatbotPage> {
         margin: const EdgeInsets.only(left: 16, bottom: 6),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(16),
           boxShadow: const [
             BoxShadow(color: Color(0x14000000), blurRadius: 4, offset: Offset(0, 2)),
@@ -438,9 +439,9 @@ class _ChatbotPageState extends State<ChatbotPage> {
     return SafeArea(
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          boxShadow: const [
             BoxShadow(color: Color(0x1A000000), blurRadius: 8, offset: Offset(0, -2)),
           ],
         ),

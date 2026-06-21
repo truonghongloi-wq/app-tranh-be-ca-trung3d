@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../services/theme_store.dart';
 import '../product_detail/product_detail_page.dart';
 import 'favorite_store.dart';
 
@@ -12,9 +13,10 @@ class ProfilePage extends StatelessWidget {
     final user = FirebaseAuth.instance.currentUser;
     final name = user?.displayName ?? 'Khách';
     final email = user?.email ?? '';
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7F9),
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
@@ -48,12 +50,14 @@ class ProfilePage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildUserCard(name, email),
+                _buildUserCard(name, email, theme),
+                _buildDarkModeToggle(context, isDark, theme),
                 ValueListenableBuilder<List<FavoriteItem>>(
                   valueListenable: FavoriteStore.favorites,
                   builder: (context, favorites, _) => _buildFavSection(
                     context,
                     favorites,
+                    theme,
                   ),
                 ),
               ],
@@ -64,19 +68,19 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  Widget _buildUserCard(String name, String email) {
+  Widget _buildUserCard(String name, String email, ThemeData theme) {
     final initials = _initials(name);
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 20, 16, 0),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(18),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Color(0x14000000),
+            color: Colors.black.withValues(alpha: 0.07),
             blurRadius: 10,
-            offset: Offset(0, 4),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -111,16 +115,23 @@ class ProfilePage extends StatelessWidget {
               children: [
                 Text(
                   name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF1B3A4B),
+                    color: theme.brightness == Brightness.dark
+                        ? Colors.white
+                        : const Color(0xFF1B3A4B),
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   email,
-                  style: const TextStyle(fontSize: 13, color: Colors.black54),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: theme.brightness == Brightness.dark
+                        ? Colors.white60
+                        : Colors.black54,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -132,7 +143,65 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  Widget _buildFavSection(BuildContext context, List<FavoriteItem> favorites) {
+  Widget _buildDarkModeToggle(
+      BuildContext context, bool isDark, ThemeData theme) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.07),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ValueListenableBuilder<ThemeMode>(
+        valueListenable: ThemeStore.mode,
+        builder: (_, mode, _) {
+          final dark = mode == ThemeMode.dark;
+          return SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            secondary: Icon(
+              dark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+              color: dark ? const Color(0xFF5CC1FF) : const Color(0xFFFFB74D),
+              size: 26,
+            ),
+            title: Text(
+              dark ? 'Chế độ tối' : 'Chế độ sáng',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 15,
+                color: theme.brightness == Brightness.dark
+                    ? Colors.white
+                    : const Color(0xFF1B3A4B),
+              ),
+            ),
+            subtitle: Text(
+              dark ? 'Nhấn để chuyển sang sáng' : 'Nhấn để chuyển sang tối',
+              style: TextStyle(
+                fontSize: 12,
+                color: theme.brightness == Brightness.dark
+                    ? Colors.white54
+                    : Colors.black45,
+              ),
+            ),
+            value: dark,
+            activeTrackColor: const Color(0xFF5CC1FF).withValues(alpha: 0.4),
+            activeThumbColor: const Color(0xFF5CC1FF),
+            onChanged: (_) => ThemeStore.toggle(),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildFavSection(
+      BuildContext context, List<FavoriteItem> favorites, ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -148,18 +217,18 @@ class ProfilePage extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 'Tranh Yêu Thích (${favorites.length})',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: isDark ? Colors.white : Colors.black87,
                 ),
               ),
             ],
           ),
         ),
         if (favorites.isEmpty)
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 8, 16, 40),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
             child: Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -167,14 +236,14 @@ class ProfilePage extends StatelessWidget {
                   Icon(
                     Icons.favorite_border_rounded,
                     size: 64,
-                    color: Colors.black26,
+                    color: isDark ? Colors.white24 : Colors.black26,
                   ),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   Text(
                     'Chưa có tranh yêu thích.\nNhấn ♥ trên tranh để lưu vào đây.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: Colors.black45,
+                      color: isDark ? Colors.white38 : Colors.black45,
                       fontSize: 14,
                       height: 1.5,
                     ),
@@ -217,6 +286,7 @@ class _FavoriteCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return InkWell(
       borderRadius: BorderRadius.circular(16),
       onTap: () => Navigator.push(
@@ -232,13 +302,13 @@ class _FavoriteCard extends StatelessWidget {
       ),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.cardColor,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: const [
+          boxShadow: [
             BoxShadow(
-              color: Color(0x14000000),
+              color: Colors.black.withValues(alpha: 0.07),
               blurRadius: 10,
-              offset: Offset(0, 4),
+              offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -256,7 +326,9 @@ class _FavoriteCard extends StatelessWidget {
                       imageUrl: item.url,
                       fit: BoxFit.cover,
                       errorWidget: (_, _, _) => Container(
-                        color: const Color(0xFFE3F2FD),
+                        color: theme.brightness == Brightness.dark
+                            ? const Color(0xFF1A2A35)
+                            : const Color(0xFFE3F2FD),
                         child: const Icon(
                           Icons.broken_image,
                           color: Color(0xFF2B678B),
@@ -272,7 +344,9 @@ class _FavoriteCard extends StatelessWidget {
                         child: Container(
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.9),
+                            color: theme.brightness == Brightness.dark
+                                ? Colors.black54
+                                : Colors.white.withValues(alpha: 0.9),
                             shape: BoxShape.circle,
                             boxShadow: const [
                               BoxShadow(
@@ -297,10 +371,12 @@ class _FavoriteCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               child: Text(
                 item.id,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 12,
-                  color: Color(0xFF1B3A4B),
+                  color: theme.brightness == Brightness.dark
+                      ? Colors.white70
+                      : const Color(0xFF1B3A4B),
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,

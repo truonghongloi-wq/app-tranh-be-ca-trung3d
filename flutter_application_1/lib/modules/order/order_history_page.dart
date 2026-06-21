@@ -54,8 +54,9 @@ class OrderHistoryPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7F9),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text(
           'Giỏ hàng & Đơn đã đặt',
@@ -72,20 +73,21 @@ class OrderHistoryPage extends StatelessWidget {
             builder: (context, orders, _) {
               final isEmpty = cartItems.isEmpty && orders.isEmpty;
               if (isEmpty) {
-                return const Center(
+                final emptyDark = theme.brightness == Brightness.dark;
+                return Center(
                   child: Padding(
-                    padding: EdgeInsets.all(24),
+                    padding: const EdgeInsets.all(24),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(Icons.shopping_cart_outlined,
-                            size: 64, color: Colors.black26),
-                        SizedBox(height: 16),
+                            size: 64, color: emptyDark ? Colors.white24 : Colors.black26),
+                        const SizedBox(height: 16),
                         Text(
                           'Giỏ hàng trống\nChưa có đơn hàng nào.',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                              fontSize: 15, color: Colors.black45),
+                              fontSize: 15, color: emptyDark ? Colors.white38 : Colors.black45),
                         ),
                       ],
                     ),
@@ -214,10 +216,12 @@ class OrderHistoryPage extends StatelessWidget {
   }
 
   Widget _buildOrderCard(BuildContext context, OrderRecord order) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(14),
         boxShadow: const [
           BoxShadow(color: Colors.black12, blurRadius: 6),
@@ -233,23 +237,30 @@ class OrderHistoryPage extends StatelessWidget {
               Expanded(
                 child: Text(
                   'Đơn ${order.imageId}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : null,
                   ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          Text('Thời gian: ${_formatDate(order.createdAt)}'),
-          Text('Khách: ${order.customerName}'),
-          Text('SĐT: ${order.customerPhone}'),
-          Text('Địa chỉ: ${order.customerAddress}'),
-          Text('Số tấm: ${order.tongSoTam}'),
+          Text('Thời gian: ${_formatDate(order.createdAt)}',
+              style: TextStyle(color: isDark ? Colors.white70 : null)),
+          Text('Khách: ${order.customerName}',
+              style: TextStyle(color: isDark ? Colors.white70 : null)),
+          Text('SĐT: ${order.customerPhone}',
+              style: TextStyle(color: isDark ? Colors.white70 : null)),
+          Text('Địa chỉ: ${order.customerAddress}',
+              style: TextStyle(color: isDark ? Colors.white70 : null)),
+          Text('Số tấm: ${order.tongSoTam}',
+              style: TextStyle(color: isDark ? Colors.white70 : null)),
           ...order.cacMatIn.map(
             (mat) => Text(
               'Tranh mặt $mat: ${_paintingSize(order.kichThuoc, mat)} cm (${order.chatLieuPerMat[mat] ?? order.chatLieu})',
+              style: TextStyle(color: isDark ? Colors.white70 : null),
             ),
           ),
           const Divider(height: 20),
@@ -360,10 +371,12 @@ class _CartItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(14),
         boxShadow: const [
           BoxShadow(color: Color(0x0F000000), blurRadius: 8, offset: Offset(0, 3)),
@@ -391,23 +404,23 @@ class _CartItemCard extends StatelessWidget {
               children: [
                 Text(
                   'Tranh ${item.imageId}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
-                    color: Color(0xFF1B3A4B),
+                    color: isDark ? Colors.white : const Color(0xFF1B3A4B),
                   ),
                 ),
                 const SizedBox(height: 4),
                 ...item.cacMatIn.map((mat) => Text(
                       'Mặt $mat: ${paintingSize(item.kichThuoc, mat)} cm'
                       ' (${item.chatLieuPerMat[mat] ?? item.chatLieu})',
-                      style: const TextStyle(
-                          fontSize: 12, color: Colors.black54),
+                      style: TextStyle(
+                          fontSize: 12, color: isDark ? Colors.white54 : Colors.black54),
                     )),
                 Text(
                   '${item.tongSoTam} tấm',
-                  style: const TextStyle(
-                      fontSize: 12, color: Colors.black38),
+                  style: TextStyle(
+                      fontSize: 12, color: isDark ? Colors.white38 : Colors.black38),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -472,6 +485,7 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Row(
       children: [
         Container(
@@ -485,10 +499,10 @@ class _SectionHeader extends StatelessWidget {
         const SizedBox(width: 10),
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF1B3A4B),
+            color: isDark ? Colors.white : const Color(0xFF1B3A4B),
           ),
         ),
         const SizedBox(width: 8),

@@ -40,8 +40,12 @@ class _MainShellState extends State<MainShell> {
         currentIndex: _currentIndex,
         onTap: _switchTab,
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: const Color(0xFF2B678B),
-        unselectedItemColor: Colors.grey,
+        backgroundColor:
+            Theme.of(context).bottomNavigationBarTheme.backgroundColor,
+        selectedItemColor:
+            Theme.of(context).bottomNavigationBarTheme.selectedItemColor,
+        unselectedItemColor:
+            Theme.of(context).bottomNavigationBarTheme.unselectedItemColor,
         selectedLabelStyle: const TextStyle(
           fontWeight: FontWeight.w600,
           fontSize: 12,

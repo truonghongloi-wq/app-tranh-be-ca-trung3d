@@ -46,8 +46,9 @@ class _GalleryPageState extends State<GalleryPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7F9),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) => [
           SliverAppBar(
@@ -114,6 +115,7 @@ class _GalleryPageState extends State<GalleryPage> {
             }
             final raw = snapshot.data ?? [];
             if (raw.isEmpty) {
+              final emptyDark = theme.brightness == Brightness.dark;
               return Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -121,8 +123,8 @@ class _GalleryPageState extends State<GalleryPage> {
                     Icon(Icons.image_search,
                         size: 64, color: Colors.grey.shade400),
                     const SizedBox(height: 16),
-                    const Text('Chưa có ảnh trong danh mục này',
-                        style: TextStyle(color: Colors.black54)),
+                    Text('Chưa có ảnh trong danh mục này',
+                        style: TextStyle(color: emptyDark ? Colors.white54 : Colors.black54)),
                   ],
                 ),
               );
@@ -164,6 +166,8 @@ class _GalleryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return InkWell(
       borderRadius: BorderRadius.circular(16),
       onTap: () => Navigator.push(
@@ -179,7 +183,7 @@ class _GalleryCard extends StatelessWidget {
       ),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.cardColor,
           borderRadius: BorderRadius.circular(16),
           boxShadow: const [
             BoxShadow(
@@ -206,7 +210,7 @@ class _GalleryCard extends StatelessWidget {
                         borderRadius: BorderRadius.zero,
                       ),
                       errorWidget: (_, _, _) => Container(
-                        color: const Color(0xFFE3F2FD),
+                        color: isDark ? const Color(0xFF1A2A35) : const Color(0xFFE3F2FD),
                         child: const Icon(Icons.broken_image,
                             color: Color(0xFF2B678B), size: 36),
                       ),
@@ -245,7 +249,9 @@ class _GalleryCard extends StatelessWidget {
                             child: Container(
                               padding: const EdgeInsets.all(6),
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.88),
+                                color: isDark
+                                    ? Colors.black54
+                                    : Colors.white.withValues(alpha: 0.88),
                                 shape: BoxShape.circle,
                                 boxShadow: const [
                                   BoxShadow(
@@ -278,10 +284,10 @@ class _GalleryCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       item.name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 12,
-                        color: Color(0xFF1B3A4B),
+                        color: isDark ? Colors.white70 : const Color(0xFF1B3A4B),
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -310,6 +316,7 @@ class _GalleryCard extends StatelessWidget {
 class _SkeletonGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final cardColor = Theme.of(context).cardColor;
     return GridView.builder(
       padding: const EdgeInsets.all(12),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -321,7 +328,7 @@ class _SkeletonGrid extends StatelessWidget {
       itemCount: 8,
       itemBuilder: (_, _) => Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cardColor,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(

@@ -60,7 +60,6 @@ class OrderConfirmationPage extends StatefulWidget {
 class _OrderConfirmationPageState extends State<OrderConfirmationPage> {
   static const Color _primary = Color(0xFF2B678B);
   static const Color _gradientTop = Color(0xFF5CC1FF);
-  static const Color _bg = Color(0xFFF4F7F9);
 
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _nameCtrl = TextEditingController();
@@ -88,7 +87,7 @@ class _OrderConfirmationPageState extends State<OrderConfirmationPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
@@ -552,7 +551,7 @@ class _InvoicePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7F9),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         automaticallyImplyLeading: false,
         backgroundColor: const Color(0xFF2B678B),
@@ -867,7 +866,7 @@ class _Card extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(18),
         boxShadow: const [
           BoxShadow(
@@ -889,6 +888,7 @@ class _CardHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Row(
       children: [
         Container(
@@ -902,10 +902,10 @@ class _CardHeader extends StatelessWidget {
         const SizedBox(width: 10),
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF1B3A4B),
+            color: isDark ? Colors.white : const Color(0xFF1B3A4B),
           ),
         ),
       ],
@@ -920,21 +920,22 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label,
-              style: const TextStyle(color: Colors.black45, fontSize: 13)),
+              style: TextStyle(color: isDark ? Colors.white38 : Colors.black45, fontSize: 13)),
           Expanded(
             child: Text(
               value,
               textAlign: TextAlign.right,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 13,
-                color: Color(0xFF1B3A4B),
+                color: isDark ? Colors.white : const Color(0xFF1B3A4B),
               ),
             ),
           ),
@@ -966,15 +967,16 @@ class _StyledField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       inputFormatters: inputFormatters,
       maxLines: maxLines,
       validator: validator,
-      style: const TextStyle(
+      style: TextStyle(
           fontSize: 14,
-          color: Color(0xFF1B3A4B),
+          color: isDark ? Colors.white : const Color(0xFF1B3A4B),
           fontWeight: FontWeight.w500),
       decoration: InputDecoration(
         labelText: label,
@@ -982,11 +984,11 @@ class _StyledField extends StatelessWidget {
             color: Color(0xFF2B678B), fontSize: 13),
         hintText: hint,
         hintStyle:
-            const TextStyle(color: Colors.black26, fontSize: 13),
+            TextStyle(color: isDark ? Colors.white24 : Colors.black26, fontSize: 13),
         prefixIcon:
             Icon(icon, color: const Color(0xFF2B678B), size: 20),
         filled: true,
-        fillColor: const Color(0xFFF4F7F9),
+        fillColor: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF4F7F9),
         contentPadding:
             const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
         border: OutlineInputBorder(

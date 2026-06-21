@@ -32,7 +32,10 @@ class _NewPaintingsPageState extends State<NewPaintingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text("Tranh Mới Cập Nhật"),
         backgroundColor: Colors.green,
@@ -101,10 +104,10 @@ class _NewPaintingsPageState extends State<NewPaintingsPage> {
                     const SizedBox(height: 8),
                     Text(
                       item.name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
-                        color: Colors.black87,
+                        color: isDark ? Colors.white : Colors.black87,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

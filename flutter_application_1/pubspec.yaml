@@ -49,6 +49,7 @@ dependencies:
   cloud_functions: ^4.7.6
   gal: ^2.3.0
   url_launcher: ^6.3.0
+  shared_preferences: ^2.2.3
 
 dev_dependencies:
   flutter_test:

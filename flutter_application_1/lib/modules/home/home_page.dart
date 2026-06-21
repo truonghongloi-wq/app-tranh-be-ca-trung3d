@@ -206,8 +206,10 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7F9),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: CustomScrollView(
         controller: _scrollController,
         slivers: [
@@ -303,7 +305,7 @@ class _HomePageState extends State<HomePage> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Text(
                       'Kết quả cho: "$searchQuery"',
-                      style: const TextStyle(color: Colors.black54),
+                      style: TextStyle(color: isDark ? Colors.white54 : Colors.black54),
                     ),
                   ),
               ],
@@ -318,13 +320,13 @@ class _HomePageState extends State<HomePage> {
                   ),
                 )
               : _filteredCategories.isEmpty
-                  ? const SliverToBoxAdapter(
+                  ? SliverToBoxAdapter(
                       child: Padding(
-                        padding: EdgeInsets.all(24),
+                        padding: const EdgeInsets.all(24),
                         child: Center(
                           child: Text(
                             'Không tìm thấy chủ đề phù hợp.',
-                            style: TextStyle(color: Colors.black54),
+                            style: TextStyle(color: isDark ? Colors.white54 : Colors.black54),
                           ),
                         ),
                       ),
@@ -488,28 +490,30 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildGreetingBanner() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 14, 16, 0),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 2)),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 6, offset: const Offset(0, 2)),
         ],
       ),
       child: Row(
         children: [
-          const Icon(Icons.waving_hand_rounded,
-              color: Color(0xFF2B678B), size: 20),
+          Icon(Icons.waving_hand_rounded,
+              color: isDark ? const Color(0xFF5CC1FF) : const Color(0xFF2B678B), size: 20),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               'Xin chào, $_displayName!',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF1B4F6A),
+                color: isDark ? Colors.white : const Color(0xFF1B4F6A),
               ),
             ),
           ),
@@ -602,6 +606,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildSearchBar() {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -627,7 +632,6 @@ class _HomePageState extends State<HomePage> {
               suffixIcon: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Nút xóa text tìm kiếm
                   if (searchQuery.isNotEmpty)
                     IconButton(
                       onPressed: () {
@@ -639,7 +643,7 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
               filled: true,
-              fillColor: Colors.white,
+              fillColor: theme.cardColor,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(15),
                 borderSide: BorderSide.none,
@@ -653,7 +657,7 @@ class _HomePageState extends State<HomePage> {
             margin: const EdgeInsets.symmetric(horizontal: 24),
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: theme.cardColor,
               borderRadius:
                   const BorderRadius.vertical(bottom: Radius.circular(15)),
               boxShadow: const [
@@ -718,12 +722,14 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildSectionTitle(String title) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
       child: Text(
         title,
-        style: const TextStyle(
-            fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+        style: TextStyle(
+            fontSize: 18, fontWeight: FontWeight.bold,
+            color: isDark ? Colors.white : Colors.black87),
       ),
     );
   }
@@ -841,7 +847,7 @@ class _HomePageState extends State<HomePage> {
               decoration: BoxDecoration(
                 color: _currentPage == index
                     ? const Color(0xFF2B678B)
-                    : Colors.grey[300],
+                    : (Theme.of(context).brightness == Brightness.dark ? Colors.grey[600] : Colors.grey[300]),
                 borderRadius: BorderRadius.circular(4),
               ),
             ),
@@ -852,6 +858,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildSizeChips() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     const sizes = [
       "60x30",
       "90x45",
@@ -873,9 +881,9 @@ class _HomePageState extends State<HomePage> {
             onSelected: (_) => setState(() => selectedSize = size),
             selectedColor: const Color(0xFF2B678B),
             labelStyle: TextStyle(
-              color: isSelected ? Colors.white : Colors.black87,
+              color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
             ),
-            backgroundColor: Colors.white,
+            backgroundColor: theme.cardColor,
           );
         }).toList(),
       ),

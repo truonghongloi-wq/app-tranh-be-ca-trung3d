@@ -17,7 +17,6 @@ class CartCheckoutPage extends StatefulWidget {
 class _CartCheckoutPageState extends State<CartCheckoutPage> {
   static const Color _primary = Color(0xFF2B678B);
   static const Color _gradientTop = Color(0xFF5CC1FF);
-  static const Color _bg = Color(0xFFF4F7F9);
 
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _nameCtrl = TextEditingController();
@@ -143,8 +142,9 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
@@ -216,12 +216,13 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
                     color: _primary, size: 16),
               ),
               const SizedBox(width: 10),
-              const Text(
+              Text(
                 'Sản phẩm trong giỏ',
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1B3A4B),
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white : const Color(0xFF1B3A4B),
                 ),
               ),
             ],
@@ -247,11 +248,13 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
             : null);
     final effectiveTongTien = item.tongTien - extraDiscount;
 
+    final cardTheme = Theme.of(context);
+    final cardDark = cardTheme.brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardTheme.cardColor,
         borderRadius: BorderRadius.circular(14),
         boxShadow: const [
           BoxShadow(color: Color(0x0F000000), blurRadius: 8, offset: Offset(0, 3)),
@@ -282,10 +285,10 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
                     Expanded(
                       child: Text(
                         'Tranh ${item.imageId}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
-                          color: Color(0xFF1B3A4B),
+                          color: cardDark ? Colors.white : const Color(0xFF1B3A4B),
                         ),
                       ),
                     ),
@@ -313,12 +316,12 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
                 const SizedBox(height: 4),
                 ...item.cacMatIn.map((mat) => Text(
                       'Mặt $mat: ${_getSize(item, mat)} cm',
-                      style: const TextStyle(
-                          fontSize: 12, color: Colors.black54),
+                      style: TextStyle(
+                          fontSize: 12, color: cardDark ? Colors.white54 : Colors.black54),
                     )),
                 Text(
                   '${item.tongSoTam} tấm · ${item.chatLieu}',
-                  style: const TextStyle(fontSize: 12, color: Colors.black45),
+                  style: TextStyle(fontSize: 12, color: cardDark ? Colors.white38 : Colors.black45),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -366,10 +369,12 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
   }
 
   Widget _buildDeliveryForm() {
+    final formTheme = Theme.of(context);
+    final formDark = formTheme.brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: formTheme.cardColor,
         borderRadius: BorderRadius.circular(18),
         boxShadow: const [
           BoxShadow(color: Color(0x0F000000), blurRadius: 10, offset: Offset(0, 3)),
@@ -390,20 +395,20 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
                     color: _primary, size: 16),
               ),
               const SizedBox(width: 10),
-              const Text(
+              Text(
                 'Thông tin giao hàng',
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1B3A4B),
+                  color: formDark ? Colors.white : const Color(0xFF1B3A4B),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Nhập một lần cho tất cả sản phẩm',
-            style: TextStyle(fontSize: 12, color: Colors.black38),
+            style: TextStyle(fontSize: 12, color: formDark ? Colors.white38 : Colors.black38),
           ),
           const SizedBox(height: 16),
           Form(
@@ -636,8 +641,9 @@ class _CartInvoicePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final invoiceTheme = Theme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7F9),
+      backgroundColor: invoiceTheme.scaffoldBackgroundColor,
       appBar: AppBar(
         automaticallyImplyLeading: false,
         backgroundColor: const Color(0xFF2B678B),
@@ -694,7 +700,7 @@ class _CartInvoicePage extends StatelessWidget {
               final orderId = i < orderIds.length ? orderIds[i] : '';
               return Padding(
                 padding: const EdgeInsets.only(bottom: 10),
-                child: _buildItemInvoiceCard(item, orderId, i + 1),
+                child: _buildItemInvoiceCard(context, item, orderId, i + 1),
               );
             }),
             const SizedBox(height: 6),
@@ -782,11 +788,13 @@ class _CartInvoicePage extends StatelessWidget {
     );
   }
 
-  Widget _buildItemInvoiceCard(CartItem item, String orderId, int no) {
+  Widget _buildItemInvoiceCard(BuildContext context, CartItem item, String orderId, int no) {
+    final t = Theme.of(context);
+    final dk = t.brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: t.cardColor,
         borderRadius: BorderRadius.circular(14),
         boxShadow: const [
           BoxShadow(color: Colors.black12, blurRadius: 6),
@@ -815,14 +823,15 @@ class _CartInvoicePage extends StatelessWidget {
               Expanded(
                 child: Text(
                   'Tranh ${item.imageId}',
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 14),
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 14,
+                      color: dk ? Colors.white : null),
                 ),
               ),
               if (orderId.isNotEmpty)
                 Text(orderId,
-                    style: const TextStyle(
-                        fontSize: 11, color: Colors.black38)),
+                    style: TextStyle(
+                        fontSize: 11, color: dk ? Colors.white38 : Colors.black38)),
             ],
           ),
           const SizedBox(height: 8),
@@ -837,7 +846,7 @@ class _CartInvoicePage extends StatelessWidget {
             }
             return Text(
               'Mặt $mat: $size (${item.chatLieuPerMat[mat] ?? item.chatLieu})',
-              style: const TextStyle(fontSize: 13, color: Colors.black54),
+              style: TextStyle(fontSize: 13, color: dk ? Colors.white54 : Colors.black54),
             );
           }),
           const SizedBox(height: 4),
@@ -902,24 +911,25 @@ class _StyledField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const primary = Color(0xFF2B678B);
+    final fieldDark = Theme.of(context).brightness == Brightness.dark;
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       inputFormatters: inputFormatters,
       maxLines: maxLines,
       validator: validator,
-      style: const TextStyle(
+      style: TextStyle(
           fontSize: 14,
-          color: Color(0xFF1B3A4B),
+          color: fieldDark ? Colors.white : const Color(0xFF1B3A4B),
           fontWeight: FontWeight.w500),
       decoration: InputDecoration(
         labelText: label,
         labelStyle: const TextStyle(color: primary, fontSize: 13),
         hintText: hint,
-        hintStyle: const TextStyle(color: Colors.black26, fontSize: 13),
+        hintStyle: TextStyle(color: fieldDark ? Colors.white24 : Colors.black26, fontSize: 13),
         prefixIcon: Icon(icon, color: primary, size: 20),
         filled: true,
-        fillColor: const Color(0xFFF4F7F9),
+        fillColor: fieldDark ? const Color(0xFF2A2A2A) : const Color(0xFFF4F7F9),
         contentPadding:
             const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
         border: OutlineInputBorder(

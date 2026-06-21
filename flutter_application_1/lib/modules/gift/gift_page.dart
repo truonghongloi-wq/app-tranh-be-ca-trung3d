@@ -9,8 +9,10 @@ class GiftPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7F9),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
@@ -46,18 +48,19 @@ class GiftPage extends StatelessWidget {
               children: [
                 _buildMainBanner(),
                 const SizedBox(height: 24),
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                   child: Text(
                     'Quà Tặng Khi Mua',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: isDark ? Colors.white : Colors.black87,
                     ),
                   ),
                 ),
                 _buildGiftItem(
+                  isDark: isDark, cardColor: theme.cardColor,
                   icon: Icons.build_rounded,
                   color: const Color(0xFF667EEA),
                   title: 'Bộ dụng cụ dán',
@@ -65,6 +68,7 @@ class GiftPage extends StatelessWidget {
                       'Tặng kèm đầy đủ dụng cụ hỗ trợ dán tranh gọn gàng, chuyên nghiệp.',
                 ),
                 _buildGiftItem(
+                  isDark: isDark, cardColor: theme.cardColor,
                   icon: Icons.do_not_touch_rounded,
                   color: const Color(0xFFFF9800),
                   title: 'Sticker cảnh báo không trêu cá',
@@ -72,6 +76,7 @@ class GiftPage extends StatelessWidget {
                       'Sticker ngộ nghĩnh dán bên ngoài bể, nhắc nhở mọi người không chọc phá cá cưng.',
                 ),
                 _buildGiftItem(
+                  isDark: isDark, cardColor: theme.cardColor,
                   icon: Icons.percent_rounded,
                   color: const Color(0xFF11998E),
                   title: 'Ưu đãi lên đến 10% khi đặt cả bộ lưng + đáy',
@@ -79,6 +84,7 @@ class GiftPage extends StatelessWidget {
                       'Đặt tranh đồng bộ cả mặt lưng và mặt đáy bể — nhận ngay ưu đãi giảm giá 10%.',
                 ),
                 _buildGiftItem(
+                  isDark: isDark, cardColor: theme.cardColor,
                   icon: Icons.key_rounded,
                   color: const Color(0xFFE91E8C),
                   title: 'Móc chìa khóa mica ảnh cá koi may mắn',
@@ -86,6 +92,7 @@ class GiftPage extends StatelessWidget {
                       'Móc chìa khóa mica in hình cá koi độc đáo — mang lại may mắn và tài lộc.',
                 ),
                 _buildGiftItem(
+                  isDark: isDark, cardColor: theme.cardColor,
                   icon: Icons.local_shipping_rounded,
                   color: const Color(0xFF43A047),
                   title: 'Miễn phí vận chuyển',
@@ -93,18 +100,19 @@ class GiftPage extends StatelessWidget {
                       'Giao hàng miễn phí toàn quốc cho mọi đơn hàng tranh bể cá.',
                 ),
                 const SizedBox(height: 24),
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                   child: Text(
                     'Hướng Dẫn Dán Tranh',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: isDark ? Colors.white : Colors.black87,
                     ),
                   ),
                 ),
                 _buildGuideCard(
+                  isDark: isDark, cardColor: theme.cardColor,
                   context: context,
                   icon: Icons.water_rounded,
                   color: const Color(0xFF2196F3),
@@ -113,6 +121,7 @@ class GiftPage extends StatelessWidget {
                   url: _kDanTrongUrl,
                 ),
                 _buildGuideCard(
+                  isDark: isDark, cardColor: theme.cardColor,
                   context: context,
                   icon: Icons.home_work_rounded,
                   color: const Color(0xFF9C27B0),
@@ -212,6 +221,8 @@ class GiftPage extends StatelessWidget {
   }
 
   Widget _buildGiftItem({
+    required bool isDark,
+    required Color cardColor,
     required IconData icon,
     required Color color,
     required String title,
@@ -221,7 +232,7 @@ class GiftPage extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: const [
           BoxShadow(
@@ -250,18 +261,18 @@ class GiftPage extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
-                    color: Color(0xFF1B3A4B),
+                    color: isDark ? Colors.white : const Color(0xFF1B3A4B),
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   description,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: Colors.black54,
+                    color: isDark ? Colors.white54 : Colors.black54,
                     height: 1.45,
                   ),
                 ),
@@ -274,6 +285,8 @@ class GiftPage extends StatelessWidget {
   }
 
   Widget _buildGuideCard({
+    required bool isDark,
+    required Color cardColor,
     required BuildContext context,
     required IconData icon,
     required Color color,
@@ -284,7 +297,7 @@ class GiftPage extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: const [
           BoxShadow(
@@ -320,18 +333,18 @@ class GiftPage extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
-                        color: Color(0xFF1B3A4B),
+                        color: isDark ? Colors.white : const Color(0xFF1B3A4B),
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: Colors.black54,
+                        color: isDark ? Colors.white54 : Colors.black54,
                         height: 1.4,
                       ),
                     ),

@@ -86,8 +86,10 @@ class _ProductsPageState extends State<ProductsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7F9),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: NestedScrollView(
         headerSliverBuilder: (_, _) => [
           SliverAppBar(
@@ -141,7 +143,7 @@ class _ProductsPageState extends State<ProductsPage> {
                         )
                       : null,
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: theme.cardColor,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
                     borderSide: BorderSide.none,
@@ -159,7 +161,7 @@ class _ProductsPageState extends State<ProductsPage> {
                         _search.isEmpty
                             ? 'Chưa có chủ đề nào.'
                             : 'Không tìm thấy chủ đề.',
-                        style: const TextStyle(color: Colors.black54),
+                        style: TextStyle(color: isDark ? Colors.white54 : Colors.black54),
                       ),
                     )
                   : GridView.builder(

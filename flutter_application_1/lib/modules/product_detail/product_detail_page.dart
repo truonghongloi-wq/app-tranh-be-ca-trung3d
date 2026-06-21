@@ -27,7 +27,6 @@ class ProductDetailPage extends StatefulWidget {
 class _ProductDetailPageState extends State<ProductDetailPage> {
   static const Color _primary = Color(0xFF2B678B);
   static const Color _gradientTop = Color(0xFF5CC1FF);
-  static const Color _bgColor = Color(0xFFF4F7F9);
 
   final Map<String, String?> selectedFacesData = {
     'Mặt lưng': 'Tranh dán ngoài',
@@ -133,7 +132,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bgColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
           _buildAppBar(context),
@@ -368,10 +367,12 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     String? subtitle,
     required Widget child,
   }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(18),
         boxShadow: const [
           BoxShadow(
@@ -400,18 +401,18 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1B3A4B),
+                      color: isDark ? Colors.white : const Color(0xFF1B3A4B),
                     ),
                   ),
                   if (subtitle != null)
                     Text(
                       subtitle,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: Colors.black45,
+                        color: isDark ? Colors.white38 : Colors.black45,
                       ),
                     ),
                 ],
@@ -445,6 +446,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     required TextEditingController controller,
     required ValueChanged<String> onChanged,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -459,11 +461,12 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           textAlign: TextAlign.center,
-          style: const TextStyle(
-              fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1B3A4B)),
+          style: TextStyle(
+              fontSize: 15, fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : const Color(0xFF1B3A4B)),
           decoration: InputDecoration(
             filled: true,
-            fillColor: const Color(0xFFF4F7F9),
+            fillColor: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF4F7F9),
             contentPadding:
                 const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
             suffix: const Text('cm',
@@ -484,6 +487,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   }
 
   Widget _buildFaceSelector() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       children: selectedFacesData.keys.map((faceName) {
         final isSelected = _isFaceSelected(faceName);
@@ -499,11 +503,11 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? const Color(0xFFE8F4FD)
-                    : const Color(0xFFF8FAFB),
+                    ? (isDark ? const Color(0xFF1A3A4B) : const Color(0xFFE8F4FD))
+                    : (isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF8FAFB)),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: isSelected ? _primary : const Color(0xFFDDE3E9),
+                  color: isSelected ? _primary : (isDark ? Colors.white12 : const Color(0xFFDDE3E9)),
                   width: isSelected ? 1.5 : 1,
                 ),
               ),
@@ -525,8 +529,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                             ? FontWeight.bold
                             : FontWeight.normal,
                         color: isSelected
-                            ? const Color(0xFF1B3A4B)
-                            : Colors.black54,
+                            ? (isDark ? Colors.white : const Color(0xFF1B3A4B))
+                            : (isDark ? Colors.white54 : Colors.black54),
                         fontSize: 14,
                       ),
                     ),
@@ -560,16 +564,17 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   }
 
   Widget _buildExtraOptions() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        const Expanded(
+        Expanded(
           child: Text(
             'Số bộ',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF1B3A4B),
+              color: isDark ? Colors.white : const Color(0xFF1B3A4B),
             ),
           ),
         ),
@@ -590,13 +595,13 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF1B3A4B)),
+                color: isDark ? Colors.white : const Color(0xFF1B3A4B)),
             decoration: InputDecoration(
               filled: true,
-              fillColor: const Color(0xFFF4F7F9),
+              fillColor: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF4F7F9),
               contentPadding: const EdgeInsets.symmetric(vertical: 10),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),

@@ -4,10 +4,11 @@ import 'package:firebase_app_check/firebase_app_check.dart';
 import 'firebase_options.dart';
 import 'app_globals.dart';
 import 'modules/auth/auth_gate.dart';
+import 'services/theme_store.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await _initFirebase();
+  await Future.wait([_initFirebase(), ThemeStore.load()]);
   runApp(const AquaDecorApp());
 }
 
@@ -30,22 +31,20 @@ class AquaDecorApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      navigatorKey: appNavigatorKey,
-      scaffoldMessengerKey: appScaffoldMessengerKey,
-      title: 'Tranh Bể Cá 3D',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        fontFamily: 'Roboto',
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-        appBarTheme: const AppBarTheme(
-          elevation: 0,
-          centerTitle: false,
-          titleTextStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-      ),
-      home: const AuthGate(),
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: ThemeStore.mode,
+      builder: (_, themeMode, _) {
+        return MaterialApp(
+          navigatorKey: appNavigatorKey,
+          scaffoldMessengerKey: appScaffoldMessengerKey,
+          title: 'Tranh Bể Cá 3D',
+          debugShowCheckedModeBanner: false,
+          theme: ThemeStore.lightTheme,
+          darkTheme: ThemeStore.darkTheme,
+          themeMode: themeMode,
+          home: const AuthGate(),
+        );
+      },
     );
   }
 }
