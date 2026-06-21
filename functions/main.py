@@ -285,22 +285,40 @@ def _send_zalo_image(access_token, secret_key, user_id, attachment_id):
         return False
 
 
+def _panel_size(kt, mat):
+    """Return 'W x H' for a panel based on dimension keys."""
+    d, r, c = kt.get("D", "?"), kt.get("R", "?"), kt.get("C", "?")
+    if mat == "lưng":
+        return f"{d} x {c}"
+    if mat == "đáy":
+        return f"{d} x {r}"
+    return f"{r} x {c}"
+
+
 def _format_order_msg(order):
     kt = order.get("kichThuoc", {})
     tien = f'{int(order.get("tongTien", 0)):,}'.replace(",", ".")
-    return (
-        "🛒 ĐƠN HÀNG MỚI - Tranh Bể Cá 3D\n"
-        "\n"
-        f"👤 Khách: {order.get('customerName', 'N/A')}\n"
-        f"📞 SĐT: {order.get('customerPhone', 'N/A')}\n"
-        f"📍 Địa chỉ: {order.get('customerAddress', 'N/A')}\n"
-        "\n"
-        f"🖼 Mã tranh: {order.get('imageId', 'N/A')}\n"
-        f"📐 Kích thước: {kt.get('D','?')} x {kt.get('R','?')} cm\n"
-        f"🧱 Chất liệu: {order.get('chatLieu', 'N/A')}\n"
-        f"🔢 Số tấm: {order.get('tongSoTam', 0)}\n"
-        f"💰 Tổng tiền: {tien} đ"
-    )
+    cl_per_mat = order.get("chatLieuPerMat", {})
+    cl_default = order.get("chatLieu", "N/A")
+
+    lines = [
+        "🛒 ĐƠN HÀNG MỚI - Tranh Bể Cá 3D",
+        "",
+        f"👤 Khách: {order.get('customerName', 'N/A')}",
+        f"📞 SĐT: {order.get('customerPhone', 'N/A')}",
+        f"📍 Địa chỉ: {order.get('customerAddress', 'N/A')}",
+        "",
+        f"🖼 Mã tranh: {order.get('imageId', 'N/A')}",
+    ]
+
+    cac_mat = order.get("cacMatIn", [])
+    for mat in cac_mat:
+        size = _panel_size(kt, mat)
+        cl = cl_per_mat.get(mat, cl_default)
+        lines.append(f"📐 Tấm {mat}: {size} cm - {cl}")
+
+    lines.append(f"💰 Tổng tiền: {tien} đ")
+    return "\n".join(lines)
 
 
 @db_fn.on_value_created(
