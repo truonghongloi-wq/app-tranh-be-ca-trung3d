@@ -1,0 +1,41 @@
+# === API Keys & Secrets ===
+API key open ai
+API tao anh
+
+# === SDK & Runtime (too large, not source code) ===
+android-sdk/
+jre21/
+
+# === Embedded git repos ===
+app tranh/
+
+# === Flutter build artifacts ===
+**/build/
+flutter_application_1/.dart_tool/
+flutter_application_1/.flutter-plugins-dependencies
+flutter_application_1/.packages
+flutter_application_1/.pub-cache/
+flutter_application_1/.pub/
+
+# === Python ===
+functions/venv/
+functions/__pycache__/
+__pycache__/
+*.pyc
+
+# === Firebase ===
+.firebase/
+flutter_application_1/.firebase/
+
+# === IDE ===
+.idea/
+*.iml
+.vscode/
+
+# === OS ===
+.DS_Store
+Thumbs.db
+
+# === Logs ===
+*.log
+flutter_application_1/last_build_log.txt

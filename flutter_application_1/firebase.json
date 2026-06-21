@@ -1,0 +1,29 @@
+{
+  "hosting": {
+    "public": "hosting",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"]
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "tranh-3d",
+          "appId": "1:125965731484:android:2046fcc290bfc8965d4f59",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "tranh-3d",
+          "configurations": {
+            "android": "1:125965731484:android:2046fcc290bfc8965d4f59",
+            "ios": "1:125965731484:ios:a62285bd973a923a5d4f59",
+            "macos": "1:125965731484:ios:a62285bd973a923a5d4f59",
+            "web": "1:125965731484:web:0791d92a396a44ff5d4f59",
+            "windows": "1:125965731484:web:158d0ef418e6c4b55d4f59"
+          }
+        }
+      }
+    }
+  }
+}

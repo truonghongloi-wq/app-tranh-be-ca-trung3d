@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "963357026859",
+    "project_id": "apptranhbeca",
+    "storage_bucket": "apptranhbeca.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:963357026859:android:3080f1575c42484e8a586e",
+        "android_client_info": {
+          "package_name": "trung3d.apptranhbeca"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "963357026859-kik5684ndjmp4n6do3heoa480drg9mnb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyArdoQtXkn7CwD4RSryIWtGlcM-epOBdrA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "963357026859-kik5684ndjmp4n6do3heoa480drg9mnb.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
