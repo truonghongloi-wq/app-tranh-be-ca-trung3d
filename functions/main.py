@@ -1,12 +1,16 @@
 import base64
+import hashlib
+import hmac
 import io
 import os
+import time
 from datetime import datetime, timezone
+from typing import Any
 
 import requests as http_requests
 from PIL import Image
 from firebase_admin import db, initialize_app
-from firebase_functions import https_fn, options
+from firebase_functions import db_fn, https_fn, options
 
 _DB_URL = "https://apptranhbeca-default-rtdb.asia-southeast1.firebasedatabase.app"
 initialize_app(options={"databaseURL": _DB_URL})
@@ -118,3 +122,142 @@ def composite_image(req: https_fn.CallableRequest) -> dict:
         "mime_type": "image/png",
         "remaining": remaining,
     }
+
+
+# ── Zalo OA Notification ─────────────────────────────────────────────
+
+_ZALO_CFG = "_zalo_oa"
+
+
+def _get_zalo_config():
+    """Read Zalo OA config + tokens from DB; auto-refresh if expired."""
+    ref = db.reference(_ZALO_CFG)
+    cfg = ref.get()
+    if not cfg:
+        return None
+
+    settings = cfg.get("settings", {})
+    tokens = cfg.get("tokens", {})
+    access_token = tokens.get("access_token", "")
+    refresh_token = tokens.get("refresh_token", "")
+    expires_at = tokens.get("expires_at", 0)
+
+    if not access_token or not settings.get("secret_key"):
+        return None
+
+    if time.time() > expires_at - 300:
+        new_tokens = _refresh_zalo_token(
+            refresh_token, settings.get("app_id", ""), settings["secret_key"]
+        )
+        if not new_tokens:
+            print("Zalo OA: refresh token thất bại")
+            return None
+        db.reference(f"{_ZALO_CFG}/tokens").update(new_tokens)
+        access_token = new_tokens["access_token"]
+
+    return {
+        "access_token": access_token,
+        "secret_key": settings["secret_key"],
+        "user_id": settings.get("user_id", ""),
+    }
+
+
+def _refresh_zalo_token(refresh_token, app_id, secret_key):
+    try:
+        resp = http_requests.post(
+            "https://oauth.zaloapp.com/v4/oa/access_token",
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded",
+                "secret_key": secret_key,
+            },
+            data={
+                "refresh_token": refresh_token,
+                "app_id": app_id,
+                "grant_type": "refresh_token",
+            },
+            timeout=10,
+        )
+        data = resp.json()
+        if "access_token" not in data:
+            print(f"Zalo OA refresh error: {data}")
+            return None
+        return {
+            "access_token": data["access_token"],
+            "refresh_token": data.get("refresh_token", ""),
+            "expires_at": time.time() + data.get("expires_in", 90000),
+        }
+    except Exception as e:
+        print(f"Zalo OA refresh exception: {e}")
+        return None
+
+
+def _zalo_appsecret_proof(access_token, secret_key):
+    return hmac.new(
+        secret_key.encode(), access_token.encode(), hashlib.sha256
+    ).hexdigest()
+
+
+def _send_zalo_msg(access_token, secret_key, user_id, text):
+    try:
+        resp = http_requests.post(
+            "https://openapi.zalo.me/v3.0/oa/message/cs",
+            headers={
+                "Content-Type": "application/json",
+                "access_token": access_token,
+                "appsecret_proof": _zalo_appsecret_proof(access_token, secret_key),
+            },
+            json={
+                "recipient": {"user_id": user_id},
+                "message": {"text": text},
+            },
+            timeout=10,
+        )
+        data = resp.json()
+        return data.get("error") == 0
+    except Exception as e:
+        print(f"Zalo OA send error: {e}")
+        return False
+
+
+def _format_order_msg(order):
+    kt = order.get("kichThuoc", {})
+    mats = ", ".join(order.get("cacMatIn", []))
+    tien = f'{int(order.get("tongTien", 0)):,}'.replace(",", ".")
+    return (
+        "🛒 ĐƠN HÀNG MỚI - Tranh Bể Cá 3D\n"
+        "\n"
+        f"👤 Khách: {order.get('customerName', 'N/A')}\n"
+        f"📞 SĐT: {order.get('customerPhone', 'N/A')}\n"
+        f"📍 Địa chỉ: {order.get('customerAddress', 'N/A')}\n"
+        "\n"
+        f"🖼 Mã tranh: {order.get('imageId', 'N/A')}\n"
+        f"📐 Kích thước: {kt.get('D','?')} x {kt.get('R','?')} x {kt.get('C','?')} cm\n"
+        f"📋 Mặt in: {mats}\n"
+        f"🧱 Chất liệu: {order.get('chatLieu', 'N/A')}\n"
+        f"🔢 Số tấm: {order.get('tongSoTam', 0)}\n"
+        f"📏 Diện tích: {order.get('tongDienTich', 0):.2f} m²\n"
+        f"💰 Tổng tiền: {tien} đ"
+    )
+
+
+@db_fn.on_value_created(
+    reference="orders/{order_id}",
+    region="asia-southeast1",
+)
+def on_order_created(event: db_fn.Event[Any]) -> None:
+    """Auto-send Zalo OA notification when a new order is saved."""
+    order = event.data
+    if not order or not isinstance(order, dict):
+        return
+
+    zalo = _get_zalo_config()
+    if not zalo:
+        print("Zalo OA chưa cấu hình hoặc token hết hạn")
+        return
+
+    msg = _format_order_msg(order)
+    ok = _send_zalo_msg(
+        zalo["access_token"], zalo["secret_key"], zalo["user_id"], msg
+    )
+    oid = event.params.get("order_id", "?")
+    print(f"Zalo OA {'OK' if ok else 'FAIL'} cho đơn {oid}")

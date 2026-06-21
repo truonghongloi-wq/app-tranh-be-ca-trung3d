@@ -108,8 +108,8 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
           createdAt: now,
         );
         OrderStore.addOrder(record);
-        final result = await OrderNotificationService.submitOrder(record);
-        results.add(result.orderId);
+        final orderId = await OrderNotificationService.submitOrder(record);
+        results.add(orderId);
       }
 
       OrderStore.clearCart();

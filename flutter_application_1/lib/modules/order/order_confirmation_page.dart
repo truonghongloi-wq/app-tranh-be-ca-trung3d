@@ -454,14 +454,14 @@ class _OrderConfirmationPageState extends State<OrderConfirmationPage> {
 
     try {
       OrderStore.addOrder(order);
-      final result = await OrderNotificationService.submitOrder(order);
+      final orderId = await OrderNotificationService.submitOrder(order);
       if (!mounted) return;
 
       await Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => _InvoicePage(
             order: order,
-            orderId: result.orderId,
+            orderId: orderId,
           ),
         ),
       );
