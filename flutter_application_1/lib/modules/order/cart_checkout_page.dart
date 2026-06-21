@@ -93,6 +93,7 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
         final extraDiscount = _extraDiscountForItem(item);
         final record = OrderRecord(
           imageId: item.imageId,
+          imageUrl: item.imageUrl,
           tongDienTich: item.tongDienTich,
           tongTien: item.tongTien - extraDiscount,
           discountTien: item.discountTien + extraDiscount,

@@ -219,9 +219,74 @@ def _send_zalo_msg(access_token, secret_key, user_id, text):
         return False
 
 
+def _upload_image_to_zalo(access_token, secret_key, image_url):
+    """Download image from URL and upload to Zalo OA, return attachment_id."""
+    try:
+        img_resp = http_requests.get(image_url, timeout=15)
+        img_resp.raise_for_status()
+
+        content_type = img_resp.headers.get("Content-Type", "image/jpeg")
+        ext = "jpg"
+        if "png" in content_type:
+            ext = "png"
+
+        resp = http_requests.post(
+            "https://openapi.zalo.me/v2.0/oa/upload/image",
+            headers={
+                "access_token": access_token,
+                "appsecret_proof": _zalo_appsecret_proof(access_token, secret_key),
+            },
+            files={"file": (f"painting.{ext}", img_resp.content, content_type)},
+            timeout=15,
+        )
+        data = resp.json()
+        if data.get("error") == 0:
+            return data.get("data", {}).get("attachment_id")
+        print(f"Zalo OA upload image error: {data}")
+        return None
+    except Exception as e:
+        print(f"Zalo OA upload image exception: {e}")
+        return None
+
+
+def _send_zalo_image(access_token, secret_key, user_id, attachment_id):
+    """Send an image CS message via Zalo OA using attachment_id."""
+    try:
+        resp = http_requests.post(
+            "https://openapi.zalo.me/v3.0/oa/message/cs",
+            headers={
+                "Content-Type": "application/json",
+                "access_token": access_token,
+                "appsecret_proof": _zalo_appsecret_proof(access_token, secret_key),
+            },
+            json={
+                "recipient": {"user_id": user_id},
+                "message": {
+                    "attachment": {
+                        "type": "template",
+                        "payload": {
+                            "template_type": "media",
+                            "elements": [
+                                {
+                                    "media_type": "image",
+                                    "attachment_id": attachment_id,
+                                }
+                            ],
+                        },
+                    }
+                },
+            },
+            timeout=10,
+        )
+        data = resp.json()
+        return data.get("error") == 0
+    except Exception as e:
+        print(f"Zalo OA send image error: {e}")
+        return False
+
+
 def _format_order_msg(order):
     kt = order.get("kichThuoc", {})
-    mats = ", ".join(order.get("cacMatIn", []))
     tien = f'{int(order.get("tongTien", 0)):,}'.replace(",", ".")
     return (
         "🛒 ĐƠN HÀNG MỚI - Tranh Bể Cá 3D\n"
@@ -231,11 +296,9 @@ def _format_order_msg(order):
         f"📍 Địa chỉ: {order.get('customerAddress', 'N/A')}\n"
         "\n"
         f"🖼 Mã tranh: {order.get('imageId', 'N/A')}\n"
-        f"📐 Kích thước: {kt.get('D','?')} x {kt.get('R','?')} x {kt.get('C','?')} cm\n"
-        f"📋 Mặt in: {mats}\n"
+        f"📐 Kích thước: {kt.get('D','?')} x {kt.get('R','?')} cm\n"
         f"🧱 Chất liệu: {order.get('chatLieu', 'N/A')}\n"
         f"🔢 Số tấm: {order.get('tongSoTam', 0)}\n"
-        f"📏 Diện tích: {order.get('tongDienTich', 0):.2f} m²\n"
         f"💰 Tổng tiền: {tien} đ"
     )
 
@@ -255,9 +318,20 @@ def on_order_created(event: db_fn.Event[Any]) -> None:
         print("Zalo OA chưa cấu hình hoặc token hết hạn")
         return
 
-    msg = _format_order_msg(order)
-    ok = _send_zalo_msg(
-        zalo["access_token"], zalo["secret_key"], zalo["user_id"], msg
-    )
+    at = zalo["access_token"]
+    sk = zalo["secret_key"]
+    uid = zalo["user_id"]
     oid = event.params.get("order_id", "?")
-    print(f"Zalo OA {'OK' if ok else 'FAIL'} cho đơn {oid}")
+
+    image_url = order.get("imageUrl", "")
+    if image_url:
+        att_id = _upload_image_to_zalo(at, sk, image_url)
+        if att_id:
+            img_ok = _send_zalo_image(at, sk, uid, att_id)
+            print(f"Zalo OA image {'OK' if img_ok else 'FAIL'} cho đơn {oid}")
+        else:
+            print(f"Zalo OA upload image FAIL cho đơn {oid}")
+
+    msg = _format_order_msg(order)
+    ok = _send_zalo_msg(at, sk, uid, msg)
+    print(f"Zalo OA text {'OK' if ok else 'FAIL'} cho đơn {oid}")

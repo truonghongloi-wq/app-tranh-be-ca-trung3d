@@ -437,6 +437,7 @@ class _OrderConfirmationPageState extends State<OrderConfirmationPage> {
 
     final order = OrderRecord(
       imageId: widget.imageId,
+      imageUrl: widget.imageUrl,
       tongDienTich: widget.tongDienTich,
       tongTien: widget.tongTien,
       discountTien: widget.discountTien,

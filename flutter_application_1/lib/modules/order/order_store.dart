@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 class OrderRecord {
   final String imageId;
+  final String? imageUrl;
   final double tongDienTich;
   final double tongTien;
   final double discountTien;
@@ -17,6 +18,7 @@ class OrderRecord {
 
   const OrderRecord({
     required this.imageId,
+    this.imageUrl,
     required this.tongDienTich,
     required this.tongTien,
     this.discountTien = 0,
@@ -34,6 +36,7 @@ class OrderRecord {
   Map<String, dynamic> toMap() {
     return {
       'imageId': imageId,
+      if (imageUrl != null) 'imageUrl': imageUrl,
       'tongDienTich': tongDienTich,
       'tongTien': tongTien,
       'discountTien': discountTien,
