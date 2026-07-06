@@ -322,7 +322,7 @@ def _format_order_msg(order):
 
 
 @db_fn.on_value_created(
-    reference="orders/{order_id}",
+    reference="orders/{uid}/{order_id}",
     region="asia-southeast1",
 )
 def on_order_created(event: db_fn.Event[Any]) -> None:

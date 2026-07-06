@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 class OrderRecord {
+  final String? orderId; // Khóa đơn trên server (null khi chưa lưu)
   final String imageId;
   final String? imageUrl;
   final double tongDienTich;
@@ -17,6 +18,7 @@ class OrderRecord {
   final DateTime createdAt;
 
   const OrderRecord({
+    this.orderId,
     required this.imageId,
     this.imageUrl,
     required this.tongDienTich,
@@ -50,6 +52,39 @@ class OrderRecord {
       'customerAddress': customerAddress,
       'createdAt': createdAt.toIso8601String(),
     };
+  }
+
+  // Tạo OrderRecord từ dữ liệu đọc về từ Realtime Database.
+  factory OrderRecord.fromMap(String orderId, Map<dynamic, dynamic> map) {
+    Map<String, String> strMap(dynamic v) => (v is Map)
+        ? v.map((k, val) => MapEntry(k.toString(), val?.toString() ?? ''))
+        : <String, String>{};
+    List<String> strList(dynamic v) =>
+        (v is List) ? v.map((e) => e.toString()).toList() : <String>[];
+    double toD(dynamic v) => (v is num)
+        ? v.toDouble()
+        : double.tryParse(v?.toString() ?? '') ?? 0;
+
+    return OrderRecord(
+      orderId: orderId,
+      imageId: map['imageId']?.toString() ?? '',
+      imageUrl: map['imageUrl']?.toString(),
+      tongDienTich: toD(map['tongDienTich']),
+      tongTien: toD(map['tongTien']),
+      discountTien: toD(map['discountTien']),
+      tongSoTam: (map['tongSoTam'] is num)
+          ? (map['tongSoTam'] as num).toInt()
+          : int.tryParse(map['tongSoTam']?.toString() ?? '') ?? 0,
+      kichThuoc: strMap(map['kichThuoc']),
+      cacMatIn: strList(map['cacMatIn']),
+      chatLieu: map['chatLieu']?.toString() ?? '',
+      chatLieuPerMat: strMap(map['chatLieuPerMat']),
+      customerName: map['customerName']?.toString() ?? '',
+      customerPhone: map['customerPhone']?.toString() ?? '',
+      customerAddress: map['customerAddress']?.toString() ?? '',
+      createdAt:
+          DateTime.tryParse(map['createdAt']?.toString() ?? '') ?? DateTime.now(),
+    );
   }
 }
 

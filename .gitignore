@@ -39,3 +39,6 @@ Thumbs.db
 # === Logs ===
 *.log
 flutter_application_1/last_build_log.txt
+
+# === Claude Code (config công cụ máy cục bộ) ===
+.claude/

@@ -1,0 +1,46 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "orders": {
+      ".read": "root.child('users').child(auth.uid).child('role').val() === 'admin'",
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin')",
+        "$orderId": {
+          ".write": "auth != null && auth.uid === $uid && !data.exists() && newData.exists()",
+          ".validate": "newData.hasChildren(['customerName', 'customerPhone', 'customerAddress', 'tongTien'])",
+          "customerName": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 200" },
+          "customerPhone": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 30" },
+          "customerAddress": { ".validate": "newData.isString() && newData.val().length <= 500" },
+          "$other": { ".validate": true }
+        }
+      }
+    },
+
+    "users": {
+      ".read": "root.child('users').child(auth.uid).child('role').val() === 'admin'",
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin')",
+        ".write": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin')",
+        "role": {
+          ".validate": "root.child('users').child(auth.uid).child('role').val() === 'admin' || newData.val() === 'customer'"
+        },
+        "prices": {
+          ".write": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin')"
+        },
+        "$other": { ".validate": true }
+      }
+    },
+
+    "_zalo_oa": {
+      ".read": false,
+      ".write": false
+    },
+
+    "composite_quota": {
+      ".read": false,
+      ".write": false
+    }
+  }
+}

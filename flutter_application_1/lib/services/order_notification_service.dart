@@ -38,8 +38,13 @@ class OrderNotificationService {
   }
 
   static Future<String> _saveOrder(OrderRecord order) async {
-    final authToken = await FirebaseAuth.instance.currentUser?.getIdToken();
-    final baseUri = Uri.parse('$_databaseUrl/$_ordersPath.json');
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw StateError('Bạn cần đăng nhập để đặt hàng.');
+    }
+    final authToken = await user.getIdToken();
+    // Lưu đơn theo từng khách: orders/{uid}/{orderId}
+    final baseUri = Uri.parse('$_databaseUrl/$_ordersPath/${user.uid}.json');
     final uri = authToken == null || authToken.isEmpty
         ? baseUri
         : baseUri.replace(
@@ -72,6 +77,43 @@ class OrderNotificationService {
         'SSL handshake lỗi khi kết nối ${baseUri.host}. '
         'Hãy kiểm tra FIREBASE_DATABASE_URL đúng domain rtdb, mạng, và ngày giờ trên điện thoại.',
       );
+    } on SocketException {
+      throw StateError('Không kết nối được Realtime Database.');
+    } finally {
+      client.close();
+    }
+  }
+
+  /// Tải danh sách đơn hàng của khách đang đăng nhập (mới nhất trước).
+  static Future<List<OrderRecord>> loadMyOrders() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return <OrderRecord>[];
+
+    final authToken = await user.getIdToken();
+    final baseUri = Uri.parse('$_databaseUrl/$_ordersPath/${user.uid}.json');
+    final uri = authToken == null || authToken.isEmpty
+        ? baseUri
+        : baseUri.replace(queryParameters: <String, String>{'auth': authToken});
+
+    final client = HttpClient();
+    try {
+      final req = await client.getUrl(uri);
+      final res = await req.close();
+      final body = await res.transform(const Utf8Decoder()).join();
+      if (res.statusCode < 200 || res.statusCode >= 300) {
+        throw StateError('Không tải được đơn hàng (${res.statusCode}).');
+      }
+      if (body.isEmpty || body == 'null') return <OrderRecord>[];
+
+      final data = jsonDecode(body) as Map<String, dynamic>;
+      final orders = data.entries
+          .map((e) => OrderRecord.fromMap(
+                e.key,
+                e.value as Map<dynamic, dynamic>,
+              ))
+          .toList();
+      orders.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return orders;
     } on SocketException {
       throw StateError('Không kết nối được Realtime Database.');
     } finally {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../services/order_notification_service.dart';
 import 'cart_checkout_page.dart';
 import 'order_store.dart';
 
@@ -8,10 +9,45 @@ import 'order_store.dart';
 const _kDanTrongUrl = 'https://youtu.be/HPMifAo5sWI';
 const _kDanNgoaiUrl = 'https://youtu.be/1JOcMpJ9o8o';
 
-class OrderHistoryPage extends StatelessWidget {
+class OrderHistoryPage extends StatefulWidget {
   const OrderHistoryPage({super.key});
 
+  @override
+  State<OrderHistoryPage> createState() => _OrderHistoryPageState();
+}
+
+class _OrderHistoryPageState extends State<OrderHistoryPage> {
   static const Color _primary = Color(0xFF2B678B);
+
+  List<OrderRecord> _myOrders = <OrderRecord>[];
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOrders();
+  }
+
+  Future<void> _loadOrders() async {
+    if (mounted) setState(() => _error = null);
+    try {
+      final orders = await OrderNotificationService.loadMyOrders();
+      if (mounted) {
+        setState(() {
+          _myOrders = orders;
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _error = 'Không tải được đơn hàng. Kéo xuống để thử lại.';
+          _loading = false;
+        });
+      }
+    }
+  }
 
   String _formatCurrency(double amount) {
     return amount.toInt().toString().replaceAllMapped(
@@ -68,79 +104,84 @@ class OrderHistoryPage extends StatelessWidget {
       body: ValueListenableBuilder<List<CartItem>>(
         valueListenable: OrderStore.cartItems,
         builder: (context, cartItems, _) {
-          return ValueListenableBuilder<List<OrderRecord>>(
-            valueListenable: OrderStore.orders,
-            builder: (context, orders, _) {
-              final isEmpty = cartItems.isEmpty && orders.isEmpty;
-              if (isEmpty) {
-                final emptyDark = theme.brightness == Brightness.dark;
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.shopping_cart_outlined,
-                            size: 64, color: emptyDark ? Colors.white24 : Colors.black26),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Giỏ hàng trống\nChưa có đơn hàng nào.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                              fontSize: 15, color: emptyDark ? Colors.white38 : Colors.black45),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }
+          final orders = _myOrders;
+          final isEmpty = cartItems.isEmpty && orders.isEmpty;
 
-              return ListView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+          if (_loading && isEmpty) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (isEmpty) {
+            final emptyDark = theme.brightness == Brightness.dark;
+            return RefreshIndicator(
+              onRefresh: _loadOrders,
+              child: ListView(
+                padding: const EdgeInsets.all(24),
                 children: [
-                  // ── Giỏ hàng ──
-                  if (cartItems.isNotEmpty) ...[
-                    _SectionHeader(
-                      icon: Icons.shopping_cart_outlined,
-                      title: 'Giỏ hàng',
-                      badge: '${cartItems.length}',
-                    ),
-                    const SizedBox(height: 10),
-                    ...cartItems.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final item = entry.value;
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: _CartItemCard(
-                          item: item,
-                          onRemove: () => OrderStore.removeFromCart(index),
-                          formatCurrency: _formatCurrency,
-                          paintingSize: _paintingSize,
-                        ),
-                      );
-                    }),
-                    _buildCartTotal(context, cartItems),
-                    const SizedBox(height: 20),
-                    const Divider(),
-                    const SizedBox(height: 12),
-                  ],
-
-                  // ── Đơn đã đặt ──
-                  if (orders.isNotEmpty) ...[
-                    _SectionHeader(
-                      icon: Icons.receipt_long_outlined,
-                      title: 'Đơn đã đặt',
-                      badge: '${orders.length}',
-                    ),
-                    const SizedBox(height: 10),
-                    ...orders.map((order) => Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: _buildOrderCard(context, order),
-                        )),
-                  ],
+                  const SizedBox(height: 120),
+                  Icon(Icons.shopping_cart_outlined,
+                      size: 64,
+                      color: emptyDark ? Colors.white24 : Colors.black26),
+                  const SizedBox(height: 16),
+                  Text(
+                    _error ?? 'Giỏ hàng trống\nChưa có đơn hàng nào.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        fontSize: 15,
+                        color: emptyDark ? Colors.white38 : Colors.black45),
+                  ),
                 ],
-              );
-            },
+              ),
+            );
+          }
+
+          return RefreshIndicator(
+            onRefresh: _loadOrders,
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+              children: [
+                // ── Giỏ hàng ──
+                if (cartItems.isNotEmpty) ...[
+                  _SectionHeader(
+                    icon: Icons.shopping_cart_outlined,
+                    title: 'Giỏ hàng',
+                    badge: '${cartItems.length}',
+                  ),
+                  const SizedBox(height: 10),
+                  ...cartItems.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final item = entry.value;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _CartItemCard(
+                        item: item,
+                        onRemove: () => OrderStore.removeFromCart(index),
+                        formatCurrency: _formatCurrency,
+                        paintingSize: _paintingSize,
+                      ),
+                    );
+                  }),
+                  _buildCartTotal(context, cartItems),
+                  const SizedBox(height: 20),
+                  const Divider(),
+                  const SizedBox(height: 12),
+                ],
+
+                // ── Đơn đã đặt ──
+                if (orders.isNotEmpty) ...[
+                  _SectionHeader(
+                    icon: Icons.receipt_long_outlined,
+                    title: 'Đơn đã đặt',
+                    badge: '${orders.length}',
+                  ),
+                  const SizedBox(height: 10),
+                  ...orders.map((order) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _buildOrderCard(context, order),
+                      )),
+                ],
+              ],
+            ),
           );
         },
       ),
