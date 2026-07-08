@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/foundation.dart';
 import 'user_service.dart';
 
@@ -66,6 +67,55 @@ class AuthService {
 
   static Future<void> signOut() async {
     await _auth.signOut();
+  }
+
+  // Xóa tài khoản: cần mật khẩu để re-authenticate (Firebase yêu cầu đăng
+  // nhập gần đây trước khi cho xóa). Xóa hồ sơ (users/{uid}) trên Realtime DB
+  // + Firestore, sau đó xóa tài khoản Auth.
+  // Lịch sử đơn hàng (orders/{uid}) được GIỮ LẠI phục vụ kế toán/khiếu nại
+  // (đã disclose trong Privacy Policy), không còn gắn với tài khoản đăng nhập.
+  static Future<String?> deleteAccount({required String password}) async {
+    final user = _auth.currentUser;
+    if (user == null || user.email == null) {
+      return 'Không tìm thấy tài khoản đang đăng nhập.';
+    }
+
+    try {
+      final cred = EmailAuthProvider.credential(
+        email: user.email!,
+        password: password,
+      );
+      await user.reauthenticateWithCredential(cred);
+    } on FirebaseAuthException catch (e) {
+      return _mapErrorMessage(e.code);
+    } catch (e) {
+      debugPrint('[Auth] reauthenticate lỗi: $e');
+      return 'Đã xảy ra lỗi, vui lòng thử lại.';
+    }
+
+    final uid = user.uid;
+
+    try {
+      await FirebaseDatabase.instance.ref('users/$uid').remove();
+    } catch (e) {
+      debugPrint('[Auth] xóa users/$uid trên Realtime DB lỗi: $e');
+    }
+
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(uid).delete();
+    } catch (e) {
+      debugPrint('[Auth] xóa Firestore users/$uid lỗi: $e');
+    }
+
+    try {
+      await user.delete();
+      return null;
+    } on FirebaseAuthException catch (e) {
+      return _mapErrorMessage(e.code);
+    } catch (e) {
+      debugPrint('[Auth] deleteAccount lỗi: $e');
+      return 'Đã xảy ra lỗi, vui lòng thử lại.';
+    }
   }
 
   static String _mapErrorMessage(String code) {

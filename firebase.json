@@ -2,6 +2,10 @@
   "database": {
     "rules": "database.rules.json"
   },
+  "hosting": {
+    "public": "flutter_application_1/hosting",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"]
+  },
   "functions": [
     {
       "source": "functions",

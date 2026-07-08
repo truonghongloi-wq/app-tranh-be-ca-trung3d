@@ -41,14 +41,14 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyCGRyctu8q-yjkUbHilAswn6yiv9E9ImCo',
-    appId: '1:125965731484:web:0791d92a396a44ff5d4f59',
-    messagingSenderId: '125965731484',
-    projectId: 'tranh-3d',
-    authDomain: 'tranh-3d.firebaseapp.com',
-    databaseURL: 'https://tranh-3d-default-rtdb.asia-southeast1.firebasedatabase.app',
+    apiKey: 'AIzaSyB_cx5_CCtNAyUe-AQcBbPoNH2Nv1XmErw',
+    appId: '1:963357026859:web:dfee219c9909a3578a586e',
+    messagingSenderId: '963357026859',
+    projectId: 'apptranhbeca',
+    authDomain: 'apptranhbeca.firebaseapp.com',
+    databaseURL: 'https://apptranhbeca-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'apptranhbeca.firebasestorage.app',
-    measurementId: 'G-SMQD95WT33',
+    measurementId: 'G-GV9FHGH3WX',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
@@ -59,35 +59,35 @@ class DefaultFirebaseOptions {
     databaseURL: 'https://apptranhbeca-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'apptranhbeca.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyDU6zUDJzH-VSdJnirfqetU3ZezBqkEkxU',
-    appId: '1:125965731484:ios:a62285bd973a923a5d4f59',
-    messagingSenderId: '125965731484',
-    projectId: 'tranh-3d',
-    databaseURL: 'https://tranh-3d-default-rtdb.asia-southeast1.firebasedatabase.app',
+    apiKey: 'AIzaSyBfRduYzPZqeWKh2-wheJQmBZ1dYvO--Pc',
+    appId: '1:963357026859:ios:a21b1ce97801dcb28a586e',
+    messagingSenderId: '963357026859',
+    projectId: 'apptranhbeca',
+    databaseURL: 'https://apptranhbeca-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'apptranhbeca.firebasestorage.app',
+    iosClientId: '963357026859-a6ugsvq6on5gdhdu46gj3u4tbvigikbj.apps.googleusercontent.com',
     iosBundleId: 'com.example.flutterApplication1',
   );
-
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyDU6zUDJzH-VSdJnirfqetU3ZezBqkEkxU',
-    appId: '1:125965731484:ios:a62285bd973a923a5d4f59',
-    messagingSenderId: '125965731484',
-    projectId: 'tranh-3d',
-    databaseURL: 'https://tranh-3d-default-rtdb.asia-southeast1.firebasedatabase.app',
+    apiKey: 'AIzaSyBfRduYzPZqeWKh2-wheJQmBZ1dYvO--Pc',
+    appId: '1:963357026859:ios:a21b1ce97801dcb28a586e',
+    messagingSenderId: '963357026859',
+    projectId: 'apptranhbeca',
+    databaseURL: 'https://apptranhbeca-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'apptranhbeca.firebasestorage.app',
+    iosClientId: '963357026859-a6ugsvq6on5gdhdu46gj3u4tbvigikbj.apps.googleusercontent.com',
     iosBundleId: 'com.example.flutterApplication1',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyCGRyctu8q-yjkUbHilAswn6yiv9E9ImCo',
-    appId: '1:125965731484:web:158d0ef418e6c4b55d4f59',
-    messagingSenderId: '125965731484',
-    projectId: 'tranh-3d',
-    authDomain: 'tranh-3d.firebaseapp.com',
-    databaseURL: 'https://tranh-3d-default-rtdb.asia-southeast1.firebasedatabase.app',
+    apiKey: 'AIzaSyB_cx5_CCtNAyUe-AQcBbPoNH2Nv1XmErw',
+    appId: '1:963357026859:web:e0b7a0c4fe8b9da28a586e',
+    messagingSenderId: '963357026859',
+    projectId: 'apptranhbeca',
+    authDomain: 'apptranhbeca.firebaseapp.com',
+    databaseURL: 'https://apptranhbeca-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'apptranhbeca.firebasestorage.app',
-    measurementId: 'G-X3ZTV0E7Q0',
+    measurementId: 'G-CFLZEQ2LBY',
   );
 }

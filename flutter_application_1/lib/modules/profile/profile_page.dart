@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../services/auth_service.dart';
 import '../../services/theme_store.dart';
 import '../product_detail/product_detail_page.dart';
 import 'favorite_store.dart';
@@ -60,11 +61,150 @@ class ProfilePage extends StatelessWidget {
                     theme,
                   ),
                 ),
+                _buildDeleteAccountSection(context, theme),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDeleteAccountSection(BuildContext context, ThemeData theme) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 30),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.07),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+        leading: const Icon(Icons.delete_forever_rounded, color: Colors.red),
+        title: const Text(
+          'Xóa tài khoản',
+          style: TextStyle(fontWeight: FontWeight.w600, color: Colors.red),
+        ),
+        subtitle: const Text(
+          'Xóa vĩnh viễn tài khoản và hồ sơ cá nhân',
+          style: TextStyle(fontSize: 12),
+        ),
+        onTap: () => _showDeleteAccountDialog(context),
+      ),
+    );
+  }
+
+  Future<void> _showDeleteAccountDialog(BuildContext context) async {
+    final passwordController = TextEditingController();
+    bool obscure = true;
+    bool loading = false;
+    String? errorText;
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (dialogContext, setState) {
+            return AlertDialog(
+              title: const Text('Xóa tài khoản'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Hành động này không thể hoàn tác. Tài khoản, hồ sơ và '
+                      'thông tin cá nhân của bạn sẽ bị xóa vĩnh viễn.\n\n'
+                      'Riêng thông tin các đơn hàng đã đặt sẽ được giữ lại '
+                      'phục vụ kế toán/bảo hành và không còn gắn với tài '
+                      'khoản đăng nhập của bạn nữa.',
+                      style: TextStyle(fontSize: 13, height: 1.4),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Nhập mật khẩu để xác nhận:',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: passwordController,
+                      obscureText: obscure,
+                      enabled: !loading,
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        hintText: 'Mật khẩu',
+                        border: const OutlineInputBorder(),
+                        errorText: errorText,
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            obscure
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                          ),
+                          onPressed: () => setState(() => obscure = !obscure),
+                        ),
+                      ),
+                      onSubmitted: (_) {},
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed:
+                      loading ? null : () => Navigator.pop(dialogContext),
+                  child: const Text('Hủy'),
+                ),
+                TextButton(
+                  onPressed: loading
+                      ? null
+                      : () async {
+                          final password = passwordController.text;
+                          if (password.isEmpty) {
+                            setState(() => errorText = 'Vui lòng nhập mật khẩu.');
+                            return;
+                          }
+                          setState(() {
+                            loading = true;
+                            errorText = null;
+                          });
+                          final error = await AuthService.deleteAccount(
+                            password: password,
+                          );
+                          if (error != null) {
+                            setState(() {
+                              loading = false;
+                              errorText = error;
+                            });
+                            return;
+                          }
+                          if (dialogContext.mounted) {
+                            Navigator.pop(dialogContext);
+                          }
+                        },
+                  child: loading
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text(
+                          'Xóa tài khoản',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 

@@ -1,32 +1,18 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- ============================================================
-         AR (ARCore) – quyền bắt buộc
-         ============================================================ -->
-    <!-- Camera: bắt buộc cho AR -->
+    <!-- Camera: chụp ảnh bể cá cho tính năng ghép tranh AI -->
     <uses-permission android:name="android.permission.CAMERA" />
-    <!-- Ghi file khi lưu ảnh screenshot AR (Android < 10) -->
+    <!-- Ghi file khi lưu ảnh về máy (Android < 10) -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
-    <!-- ARCore yêu cầu thiết bị có camera -->
-    <uses-feature android:name="android.hardware.camera" android:required="true" />
-    <!-- ARCore yêu cầu camera autofocus (hầu hết thiết bị hiện đại đều có) -->
-    <uses-feature android:name="android.hardware.camera.autofocus" />
+    <!-- Camera không bắt buộc: thiết bị không có camera vẫn dùng được app
+         (chọn ảnh từ thư viện), tránh bị Play Store lọc bớt thiết bị -->
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <application
         android:label="Tranh Bể Cá 3D"
         android:name="${applicationName}"
-        android:usesCleartextTraffic="true"
         android:icon="@mipmap/ic_launcher">
-
-        <!-- ============================================================
-             ARCore meta-data
-             "required" = app chỉ chạy được trên thiết bị hỗ trợ ARCore.
-             Đổi thành "optional" nếu AR là tính năng phụ, không bắt buộc.
-             ============================================================ -->
-        <meta-data
-            android:name="com.google.ar.core"
-            android:value="optional" />
 
         <activity
             android:name=".MainActivity"
@@ -49,9 +35,6 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
-        <meta-data
-            android:name="com.google.firebase.appcheck.debug.DEBUG_SECRET"
-            android:value="a1b2c3d4-e5f6-7890-abcd-ef1234567890" />
     </application>
     <queries>
         <intent>
