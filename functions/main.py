@@ -9,11 +9,14 @@ from typing import Any
 
 import requests as http_requests
 from PIL import Image
-from firebase_admin import db, initialize_app
+from firebase_admin import auth as admin_auth
+from firebase_admin import db, firestore, initialize_app
 from firebase_functions import db_fn, https_fn, options
 
 _DB_URL = "https://apptranhbeca-default-rtdb.asia-southeast1.firebasedatabase.app"
 initialize_app(options={"databaseURL": _DB_URL})
+
+_ADMIN_EMAIL = "tranhbeca2018@gmail.com"
 
 _OPENAI_KEY = os.environ.get("OPENAI_API_KEY", "").strip().lstrip('﻿')
 _DAILY_LIMIT = 3
@@ -364,3 +367,48 @@ def on_order_created(event: db_fn.Event[Any]) -> None:
     msg = _format_order_msg(order)
     ok = _send_zalo_msg(at, sk, uid, msg)
     print(f"Zalo OA text {'OK' if ok else 'FAIL'} cho đơn {oid}")
+
+
+# ── Admin: xóa khách hàng (Dashboard web) ────────────────────────────
+
+
+@https_fn.on_call(region="asia-southeast1")
+def admin_delete_customer(req: https_fn.CallableRequest) -> dict:
+    """Xóa toàn bộ 1 khách hàng: tài khoản Auth + hồ sơ RTDB + bản ghi CRM
+    Firestore. Chỉ admin (email cố định) được gọi. Lịch sử đơn hàng
+    (orders/{uid}) được GIỮ LẠI, giống chính sách tự xóa tài khoản trong app.
+    """
+    if req.auth is None or req.auth.token.get("email") != _ADMIN_EMAIL:
+        raise https_fn.HttpsError("permission-denied", "Chỉ admin được xóa khách hàng.")
+
+    uid = (req.data or {}).get("uid") or None
+    firestore_doc_id = (req.data or {}).get("firestoreDocId") or None
+
+    if not uid and not firestore_doc_id:
+        raise https_fn.HttpsError("invalid-argument", "Thiếu uid hoặc firestoreDocId.")
+
+    result = {"auth_deleted": False, "rtdb_deleted": False, "firestore_deleted": False}
+
+    if uid:
+        try:
+            admin_auth.delete_user(uid)
+            result["auth_deleted"] = True
+        except admin_auth.UserNotFoundError:
+            pass
+        except Exception as e:
+            print(f"admin_delete_customer: xóa Auth {uid} lỗi: {e}")
+
+        try:
+            db.reference(f"users/{uid}").delete()
+            result["rtdb_deleted"] = True
+        except Exception as e:
+            print(f"admin_delete_customer: xóa RTDB users/{uid} lỗi: {e}")
+
+    if firestore_doc_id:
+        try:
+            firestore.client().collection("users").document(firestore_doc_id).delete()
+            result["firestore_deleted"] = True
+        except Exception as e:
+            print(f"admin_delete_customer: xóa Firestore {firestore_doc_id} lỗi: {e}")
+
+    return result

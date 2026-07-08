@@ -234,24 +234,71 @@ class _UserTile extends StatelessWidget {
               : 'Đăng ký: $date',
           style: const TextStyle(fontSize: 12, color: Colors.black45),
         ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              _shortPrice(record.prices),
-              style: const TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFF2B678B),
-                  fontWeight: FontWeight.w600),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  _shortPrice(record.prices),
+                  style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF2B678B),
+                      fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 2),
+                const Text('đ/m²', style: TextStyle(fontSize: 11, color: Colors.black38)),
+              ],
             ),
-            const SizedBox(height: 2),
-            const Text('đ/m²', style: TextStyle(fontSize: 11, color: Colors.black38)),
+            IconButton(
+              icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
+              tooltip: 'Xóa khách hàng',
+              onPressed: () => _confirmDelete(context),
+            ),
           ],
         ),
         onTap: () => _openEditSheet(context),
       ),
     );
+  }
+
+  Future<void> _confirmDelete(BuildContext context) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Xóa khách hàng'),
+        content: Text(
+          'Xóa hẳn tài khoản đăng nhập của "${record.displayName.isNotEmpty ? record.displayName : record.email}"?\n\n'
+          'Khách sẽ không đăng nhập được nữa. Lịch sử đơn hàng vẫn được giữ lại.',
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Hủy')),
+          TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Xóa', style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    final success = await UserService.deleteCustomer(record.uid);
+    if (!context.mounted) return;
+    if (success) {
+      onPricesSaved();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Đã xóa khách hàng')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Xóa thất bại, vui lòng thử lại'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   String _avatarChar(UserRecord r) {

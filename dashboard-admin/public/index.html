@@ -286,9 +286,10 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-  import { getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+  import { getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
   import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
   import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+  import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-functions.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyB_cx5_CCtNAyUe-AQcBbPoNH2Nv1XmErw",
@@ -304,6 +305,8 @@
   const db = getFirestore(app);
   const auth = getAuth(app);
   const rtdb = getDatabase(app);
+  const functions = getFunctions(app, 'asia-southeast1');
+  const adminDeleteCustomer = httpsCallable(functions, 'admin_delete_customer');
 
   window.doLogin = async function() {
     const email = document.getElementById('login-email').value.trim();
@@ -537,7 +540,7 @@
         <td>${u.notes || '–'}</td>
         <td style="white-space:nowrap;">
           <button class="btn btn-primary btn-sm" onclick="editUser('${u._key}')">✏️</button>
-          ${u.id ? `<button class="btn btn-danger btn-sm" onclick="deleteUser('${u._key}')">🗑️</button>` : ''}
+          <button class="btn btn-danger btn-sm" onclick="deleteUser('${u._key}')">🗑️</button>
         </td>
       </tr>
     `;
@@ -649,10 +652,17 @@
 
   window.deleteUser = async function(key) {
     const user = allUsers.find(u => u._key === key);
-    if (!user || !user.id) return;
-    if (!confirm('Bạn chắc chắn muốn xoá?')) return;
+    if (!user) return;
+
+    const warning = user.registered
+      ? `Khách này ĐÃ ĐĂNG KÝ tài khoản trong app (${user.email}).\nXóa sẽ hủy hẳn tài khoản đăng nhập của khách — khách sẽ không đăng nhập được nữa.\nLịch sử đơn hàng vẫn được giữ lại.\n\nBạn chắc chắn muốn xóa?`
+      : 'Bạn chắc chắn muốn xoá bản ghi này?';
+    if (!confirm(warning)) return;
+
     try {
-      await deleteDoc(doc(db, 'users', user.id));
+      if (user.uid || user.id) {
+        await adminDeleteCustomer({ uid: user.uid || null, firestoreDocId: user.id || null });
+      }
       window.showToast('✓ Đã xoá');
       window.loadUsers();
     } catch(e) {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../app_globals.dart';
 import '../../services/user_service.dart';
 import '../composite/composite_screen.dart';
 import '../order/order_confirmation_page.dart';
@@ -842,8 +843,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     action: SnackBarAction(
                       label: 'Xem giỏ',
                       onPressed: () {
-                        Navigator.push(
-                          context,
+                        appNavigatorKey.currentState?.push(
                           MaterialPageRoute(builder: (_) => const OrderHistoryPage()),
                         );
                       },

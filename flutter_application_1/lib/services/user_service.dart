@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/foundation.dart';
@@ -230,6 +231,20 @@ class UserService {
       debugPrint('[UserService] loadCurrentUserRecord lỗi: $e');
     }
     return null;
+  }
+
+  // Xóa toàn bộ 1 khách hàng: tài khoản Auth + hồ sơ RTDB (chỉ admin).
+  // Lịch sử đơn hàng (orders/{uid}) được giữ lại.
+  static Future<bool> deleteCustomer(String uid) async {
+    try {
+      final callable = FirebaseFunctions.instanceFor(region: 'asia-southeast1')
+          .httpsCallable('admin_delete_customer');
+      await callable.call({'uid': uid});
+      return true;
+    } catch (e) {
+      debugPrint('[UserService] deleteCustomer lỗi: $e');
+      return false;
+    }
   }
 
   // Cập nhật bảng giá cho một user (chỉ admin)
