@@ -69,6 +69,18 @@ class AuthService {
     await _auth.signOut();
   }
 
+  static Future<String?> resetPassword({required String email}) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email.trim());
+      return null;
+    } on FirebaseAuthException catch (e) {
+      return _mapErrorMessage(e.code);
+    } catch (e) {
+      debugPrint('[Auth] resetPassword lỗi: $e');
+      return 'Đã xảy ra lỗi, vui lòng thử lại.';
+    }
+  }
+
   // Xóa tài khoản: cần mật khẩu để re-authenticate (Firebase yêu cầu đăng
   // nhập gần đây trước khi cho xóa). Xóa hồ sơ (users/{uid}) trên Realtime DB
   // + Firestore, sau đó xóa tài khoản Auth.

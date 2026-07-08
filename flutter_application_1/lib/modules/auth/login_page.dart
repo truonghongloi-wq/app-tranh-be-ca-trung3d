@@ -68,6 +68,123 @@ class _LoginPageState extends State<LoginPage>
     });
   }
 
+  Future<void> _showForgotPasswordDialog() async {
+    final emailCtrl = TextEditingController(text: _emailCtrl.text);
+    bool sending = false;
+    String? dialogError;
+
+    await showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: const Text('Quên mật khẩu'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Nhập email đã đăng ký, hệ thống sẽ gửi link đặt lại mật khẩu.',
+                    style: TextStyle(fontSize: 13, color: Colors.black54),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: emailCtrl,
+                    keyboardType: TextInputType.emailAddress,
+                    autocorrect: false,
+                    enabled: !sending,
+                    decoration: _inputDecoration(
+                      hint: 'example@gmail.com',
+                      icon: Icons.email_outlined,
+                    ),
+                  ),
+                  if (dialogError != null) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      dialogError!,
+                      style: const TextStyle(
+                        color: Color(0xFFE53935),
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: sending
+                      ? null
+                      : () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Huỷ'),
+                ),
+                ElevatedButton(
+                  onPressed: sending
+                      ? null
+                      : () async {
+                          final email = emailCtrl.text.trim();
+                          if (email.isEmpty ||
+                              !RegExp(r'^[\w.+-]+@[\w-]+\.\w+$')
+                                  .hasMatch(email)) {
+                            setDialogState(
+                              () => dialogError = 'Email không đúng định dạng.',
+                            );
+                            return;
+                          }
+                          setDialogState(() {
+                            sending = true;
+                            dialogError = null;
+                          });
+                          final error = await AuthService.resetPassword(
+                            email: email,
+                          );
+                          if (error != null) {
+                            setDialogState(() {
+                              sending = false;
+                              dialogError = error;
+                            });
+                            return;
+                          }
+                          if (dialogContext.mounted) {
+                            Navigator.of(dialogContext).pop();
+                          }
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Đã gửi email đặt lại mật khẩu tới $email. Vui lòng kiểm tra hộp thư.',
+                                ),
+                                backgroundColor: const Color(0xFF2B678B),
+                              ),
+                            );
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2B678B),
+                    foregroundColor: Colors.white,
+                  ),
+                  child: sending
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2.5,
+                          ),
+                        )
+                      : const Text('Gửi'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -240,7 +357,26 @@ class _LoginPageState extends State<LoginPage>
                 return null;
               },
             ),
-            const SizedBox(height: 20),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: _loading ? null : _showForgotPasswordDialog,
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(0, 32),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Text(
+                  'Quên mật khẩu?',
+                  style: TextStyle(
+                    color: Color(0xFF2B678B),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
 
             // Error message
             if (_errorMessage != null) ...[
