@@ -1,0 +1,31 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email == 'tranhbeca2018@gmail.com';
+    }
+
+    // "users" ở đây là dữ liệu quản lý khách hàng (giá sỉ, SĐT, ghi chú...) dùng
+    // bởi Dashboard Admin (dashboard-admin/public) và để tra giá sỉ trong app
+    // (UserService.loadCurrentUserPrices — khách chỉ đọc được đúng doc của mình).
+    match /users/{docId} {
+      allow read: if isAdmin() || (request.auth != null && resource.data.email == request.auth.token.email);
+
+      // Khách tự đăng ký chỉ được tạo/sửa field displayName trên đúng doc của
+      // mình (đồng bộ tên hiển thị) — không được đụng vào price/shipPrice/notes.
+      allow create: if isAdmin() ||
+        (request.auth != null && request.auth.uid == docId &&
+          request.resource.data.keys().hasOnly(['displayName']));
+      allow update: if isAdmin() ||
+        (request.auth != null && request.auth.uid == docId &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName']));
+      allow delete: if isAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

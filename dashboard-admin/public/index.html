@@ -75,34 +75,16 @@
     <div style="width:70px;height:70px;border-radius:16px;background:linear-gradient(135deg,var(--primary),var(--secondary));display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:32px;">🖼️</div>
     <h2 style="margin-bottom:6px;font-size:22px;color:var(--text);">Tranh Bể Cá 3D</h2>
     <p style="color:var(--muted);font-size:14px;margin-bottom:28px;">Admin Dashboard</p>
+    <div style="margin-bottom:14px;">
+      <input type="email" id="login-email" placeholder="Email admin..." onkeydown="if(event.key==='Enter')document.getElementById('login-password').focus()" style="width:100%;padding:14px 18px;border:2px solid var(--border);border-radius:12px;font-size:15px;outline:none;transition:border .2s;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'" />
+    </div>
     <div style="position:relative;margin-bottom:20px;">
       <input type="password" id="login-password" placeholder="Nhập mật khẩu..." onkeydown="if(event.key==='Enter')doLogin()" style="width:100%;padding:14px 18px;border:2px solid var(--border);border-radius:12px;font-size:15px;outline:none;transition:border .2s;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'" />
     </div>
-    <p id="login-error" style="color:#e74c3c;font-size:13px;margin-bottom:14px;display:none;">Sai mật khẩu. Vui lòng thử lại.</p>
-    <button onclick="doLogin()" style="width:100%;padding:14px;background:linear-gradient(135deg,var(--primary),var(--secondary));color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;transition:opacity .2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Đăng nhập</button>
+    <p id="login-error" style="color:#e74c3c;font-size:13px;margin-bottom:14px;display:none;">Sai email hoặc mật khẩu.</p>
+    <button id="login-btn" onclick="doLogin()" style="width:100%;padding:14px;background:linear-gradient(135deg,var(--primary),var(--secondary));color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;transition:opacity .2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Đăng nhập</button>
   </div>
 </div>
-
-<script>
-  const _PASS_HASH = '8b2c9f3a6d1e4b7c5a0f8d2e6b9c3a7d';
-  function doLogin() {
-    var pw = document.getElementById('login-password').value;
-    if (pw === 'Tranhbeca2026') {
-      document.getElementById('login-screen').style.display = 'none';
-      document.getElementById('app-container').style.display = 'flex';
-      sessionStorage.setItem('dashboard_auth', '1');
-    } else {
-      document.getElementById('login-error').style.display = 'block';
-      document.getElementById('login-password').style.borderColor = '#e74c3c';
-    }
-  }
-  if (sessionStorage.getItem('dashboard_auth') === '1') {
-    document.addEventListener('DOMContentLoaded', function() {
-      document.getElementById('login-screen').style.display = 'none';
-      document.getElementById('app-container').style.display = 'flex';
-    });
-  }
-</script>
 
 <div id="app-container" style="display:none;min-height:100vh;width:100%;">
 <aside class="sidebar">
@@ -124,7 +106,7 @@
       <span>📥</span> Xuất báo cáo
     </div>
   </nav>
-  <div class="nav-item" onclick="sessionStorage.removeItem('dashboard_auth');location.reload();" style="color:#e74c3c;">
+  <div class="nav-item" onclick="doLogout()" style="color:#e74c3c;">
     <span>🚪</span> Đăng xuất
   </div>
   <div class="sidebar-footer">Apptranhbeca © 2026</div>
@@ -305,6 +287,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
   import { getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyB_cx5_CCtNAyUe-AQcBbPoNH2Nv1XmErw",
@@ -317,6 +300,46 @@
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
+  const auth = getAuth(app);
+
+  window.doLogin = async function() {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    const btn = document.getElementById('login-btn');
+    const errorEl = document.getElementById('login-error');
+    errorEl.style.display = 'none';
+    if (!email || !password) {
+      errorEl.textContent = 'Nhập email và mật khẩu.';
+      errorEl.style.display = 'block';
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = 'Đang đăng nhập...';
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (e) {
+      errorEl.textContent = 'Sai email hoặc mật khẩu.';
+      errorEl.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Đăng nhập';
+    }
+  };
+
+  window.doLogout = function() {
+    signOut(auth);
+  };
+
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app-container').style.display = 'flex';
+      window.loadUsers();
+    } else {
+      document.getElementById('app-container').style.display = 'none';
+      document.getElementById('login-screen').style.display = 'flex';
+    }
+  });
 
   let allUsers = [];
   const fmt = (n) => new Intl.NumberFormat('vi-VN').format(n);
@@ -562,7 +585,6 @@
   // INIT
   document.getElementById('current-time').textContent = new Date().toLocaleString('vi-VN');
   setInterval(() => { document.getElementById('current-time').textContent = new Date().toLocaleString('vi-VN'); }, 1000);
-  window.loadUsers();
 </script>
 
 </body>
