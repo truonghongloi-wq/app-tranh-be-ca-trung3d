@@ -288,6 +288,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
   import { getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
   import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+  import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyB_cx5_CCtNAyUe-AQcBbPoNH2Nv1XmErw",
@@ -295,12 +296,14 @@
     projectId: "apptranhbeca",
     storageBucket: "apptranhbeca.firebasestorage.app",
     messagingSenderId: "963357026859",
-    appId: "1:963357026859:web:dfee219c9909a3578a586e"
+    appId: "1:963357026859:web:dfee219c9909a3578a586e",
+    databaseURL: "https://apptranhbeca-default-rtdb.asia-southeast1.firebasedatabase.app"
   };
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
   const auth = getAuth(app);
+  const rtdb = getDatabase(app);
 
   window.doLogin = async function() {
     const email = document.getElementById('login-email').value.trim();
@@ -384,23 +387,125 @@
     setTimeout(() => toast.classList.remove('show'), 3000);
   };
 
+  // Danh sách CRM (giá sỉ, SĐT, ghi chú) — chủ shop tự nhập tay trên Dashboard này
+  async function loadFirestoreUsers() {
+    const snap = await getDocs(collection(db, 'users'));
+    const repairTasks = [];
+    const list = snap.docs.map(d => {
+      const user = { id: d.id, ...d.data() };
+      const resolvedName = getCustomerName(user);
+      const currentDisplayName = normalizeText(user.displayName);
+      if (resolvedName !== '–' && currentDisplayName !== resolvedName) {
+        repairTasks.push(updateDoc(doc(db, 'users', d.id), { displayName: resolvedName }));
+      }
+      return { ...user, displayName: resolvedName === '–' ? '' : resolvedName };
+    });
+    if (repairTasks.length) Promise.allSettled(repairTasks).catch(() => {});
+    return list;
+  }
+
+  // Tài khoản đã đăng ký thật trong app (Realtime Database /users)
+  async function loadRtdbUsers() {
+    try {
+      const snap = await get(ref(rtdb, 'users'));
+      if (!snap.exists()) return [];
+      const val = snap.val();
+      return Object.entries(val).map(([uid, u]) => ({
+        uid,
+        email: u.email || '',
+        displayName: u.displayName || '',
+        role: u.role || 'customer',
+        createdAt: u.createdAt || '',
+        rtdbPrices: u.prices || null,
+      }));
+    } catch (e) {
+      console.error('Không đọc được Realtime Database users:', e);
+      return [];
+    }
+  }
+
+  function tieredRangeLabel(prices) {
+    if (!prices) return null;
+    const vals = [prices.p1, prices.p2, prices.p3, prices.p4, prices.p5].filter(v => typeof v === 'number');
+    if (!vals.length) return null;
+    const lo = Math.min(...vals), hi = Math.max(...vals);
+    return lo === hi ? fmt(lo) : `${fmt(lo)}–${fmt(hi)}`;
+  }
+
+  // Gộp 2 nguồn theo email: tài khoản đăng ký thật (RTDB) + CRM giá sỉ (Firestore)
+  function mergeUsers(fsList, rtdbList) {
+    const byKey = new Map();
+
+    rtdbList.forEach(u => {
+      const key = (u.email || '').toLowerCase().trim() || `_rtdb_${u.uid}`;
+      byKey.set(key, {
+        _key: key,
+        id: null,
+        uid: u.uid,
+        registered: true,
+        role: u.role,
+        email: u.email,
+        displayName: u.displayName,
+        phone: '',
+        price: null,
+        shipPrice: null,
+        notes: '',
+        createdAt: u.createdAt,
+        rtdbPrices: u.rtdbPrices,
+      });
+    });
+
+    fsList.forEach(u => {
+      const key = (u.email || '').toLowerCase().trim();
+      if (key && byKey.has(key)) {
+        const existing = byKey.get(key);
+        byKey.set(key, {
+          ...existing,
+          id: u.id,
+          displayName: u.displayName || existing.displayName,
+          phone: u.phone || '',
+          price: u.price,
+          shipPrice: u.shipPrice,
+          notes: u.notes || '',
+          createdAt: existing.createdAt || u.createdAt,
+        });
+      } else {
+        byKey.set(key || `_fs_${u.id}`, {
+          _key: key || `_fs_${u.id}`,
+          id: u.id,
+          uid: null,
+          registered: false,
+          role: null,
+          email: u.email || '',
+          displayName: u.displayName || '',
+          phone: u.phone || '',
+          price: u.price,
+          shipPrice: u.shipPrice,
+          notes: u.notes || '',
+          createdAt: u.createdAt,
+          rtdbPrices: null,
+        });
+      }
+    });
+
+    return Array.from(byKey.values());
+  }
+
+  function toEpochSeconds(createdAt) {
+    if (!createdAt) return 0;
+    if (typeof createdAt.seconds === 'number') return createdAt.seconds;
+    const t = Date.parse(createdAt);
+    return isNaN(t) ? 0 : Math.floor(t / 1000);
+  }
+
   window.loadUsers = async function() {
     try {
-      const snap = await getDocs(collection(db, 'users'));
-      const repairTasks = [];
-      allUsers = snap.docs.map(d => {
-        const user = { id: d.id, ...d.data() };
-        const resolvedName = getCustomerName(user);
-        const currentDisplayName = normalizeText(user.displayName);
-        if (resolvedName !== '–' && currentDisplayName !== resolvedName) {
-          repairTasks.push(updateDoc(doc(db, 'users', d.id), { displayName: resolvedName }));
-        }
-        return { ...user, displayName: resolvedName === '–' ? '' : resolvedName };
-      }).sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-
-      if (repairTasks.length) {
-        Promise.allSettled(repairTasks).catch(() => {});
-      }
+      const [fsUsers, rtdbUsers] = await Promise.all([
+        loadFirestoreUsers(),
+        loadRtdbUsers(),
+      ]);
+      allUsers = mergeUsers(fsUsers, rtdbUsers)
+        .sort((a, b) => toEpochSeconds(b.createdAt) - toEpochSeconds(a.createdAt));
 
       window.renderUsersTable(allUsers);
       window.updateStats();
@@ -417,27 +522,33 @@
       tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:50px;">Chưa có KH</td></tr>';
       return;
     }
-    tbody.innerHTML = users.map(u => `
+    tbody.innerHTML = users.map(u => {
+      const priceDisplay = u.price ? fmt(u.price) : (tieredRangeLabel(u.rtdbPrices) || '–');
+      const badge = u.registered
+        ? `<span title="Đã đăng ký tài khoản trong app" style="display:inline-block;margin-left:6px;padding:1px 7px;border-radius:10px;font-size:10px;background:#e3f2fd;color:#1565c0;">📱 App</span>`
+        : `<span title="Khách sỉ tự thêm tay (CRM)" style="display:inline-block;margin-left:6px;padding:1px 7px;border-radius:10px;font-size:10px;background:#f3e5f5;color:#7b1fa2;">✍️ CRM</span>`;
+      return `
       <tr>
-        <td><strong>${getCustomerName(u)}</strong></td>
+        <td><strong>${getCustomerName(u)}</strong>${badge}</td>
         <td>${u.email || '–'}</td>
         <td>${u.phone || '–'}</td>
-        <td><strong style="color:var(--primary);">${u.price ? fmt(u.price) : '–'}</strong></td>
+        <td><strong style="color:var(--primary);">${priceDisplay}</strong></td>
         <td>${u.shipPrice ? fmt(u.shipPrice) : '–'}</td>
         <td>${u.notes || '–'}</td>
         <td style="white-space:nowrap;">
-          <button class="btn btn-primary btn-sm" onclick="editUser('${u.id}')">✏️</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}')">🗑️</button>
+          <button class="btn btn-primary btn-sm" onclick="editUser('${u._key}')">✏️</button>
+          ${u.id ? `<button class="btn btn-danger btn-sm" onclick="deleteUser('${u._key}')">🗑️</button>` : ''}
         </td>
       </tr>
-    `).join('');
+    `;
+    }).join('');
   };
 
   window.filterUsers = function() {
     const search = document.getElementById('search-input').value.toLowerCase();
-    const filtered = allUsers.filter(u => 
-      !search || getCustomerName(u).toLowerCase().includes(search) || 
-      (u.email || '').toLowerCase().includes(search) || 
+    const filtered = allUsers.filter(u =>
+      !search || getCustomerName(u).toLowerCase().includes(search) ||
+      (u.email || '').toLowerCase().includes(search) ||
       (u.phone || '').includes(search)
     );
     window.renderUsersTable(filtered);
@@ -455,11 +566,12 @@
     document.getElementById('stat-total-users').textContent = total;
     document.getElementById('stat-avg-price').textContent = avgPrice ? fmt(avgPrice) : '–';
     document.getElementById('stat-revenue').textContent = '~' + fmt(total * avgPrice * 100);
-    
+
     const tbody = document.getElementById('recent-users-body');
     const recent = allUsers.slice(0, 5);
     tbody.innerHTML = recent.map(u => {
-      const date = u.createdAt ? new Date(u.createdAt.seconds * 1000).toLocaleDateString('vi-VN') : '–';
+      const epoch = toEpochSeconds(u.createdAt);
+      const date = epoch ? new Date(epoch * 1000).toLocaleDateString('vi-VN') : '–';
       return `<tr><td>${getCustomerName(u)}</td><td>${u.email || '–'}</td><td>${u.phone || '–'}</td><td><strong>${fmt(u.price || 0)}</strong></td><td>${date}</td></tr>`;
     }).join('') || '<tr><td colspan="5" style="text-align:center;">Không có dữ liệu</td></tr>';
   };
@@ -485,12 +597,12 @@
     document.getElementById('modal-user').classList.add('open');
   };
 
-  window.editUser = async function(id) {
-    const user = allUsers.find(u => u.id === id);
+  window.editUser = async function(key) {
+    const user = allUsers.find(u => u._key === key);
     if (!user) return;
     const customerName = pickValidText(user.displayName, user.dishplayname, user.name, user.fullName);
-    document.getElementById('modal-title').textContent = 'Chỉnh sửa khách hàng';
-    document.getElementById('edit-id').value = id;
+    document.getElementById('modal-title').textContent = user.id ? 'Chỉnh sửa khách hàng' : 'Thêm giá sỉ cho tài khoản này';
+    document.getElementById('edit-id').value = user.id || '';
     document.getElementById('edit-name').value = customerName;
     document.getElementById('edit-email').value = user.email || '';
     document.getElementById('edit-phone').value = user.phone || '';
@@ -535,10 +647,12 @@
     }
   };
 
-  window.deleteUser = async function(id) {
+  window.deleteUser = async function(key) {
+    const user = allUsers.find(u => u._key === key);
+    if (!user || !user.id) return;
     if (!confirm('Bạn chắc chắn muốn xoá?')) return;
     try {
-      await deleteDoc(doc(db, 'users', id));
+      await deleteDoc(doc(db, 'users', user.id));
       window.showToast('✓ Đã xoá');
       window.loadUsers();
     } catch(e) {
