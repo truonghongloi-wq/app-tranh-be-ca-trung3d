@@ -1,3 +1,4 @@
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -87,6 +88,11 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
     final now = DateTime.now();
 
     final results = <String>[];
+    // Giỏ có 2+ sản phẩm: gắn chung 1 groupId để Cloud Function KHÔNG tự gửi
+    // Zalo riêng lẻ từng đơn, sau đó gọi notify_order_group gộp thành 1 tin.
+    final groupId = widget.items.length > 1
+        ? 'cart_${DateTime.now().millisecondsSinceEpoch}'
+        : null;
 
     try {
       for (final item in widget.items) {
@@ -106,10 +112,41 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
           customerPhone: phone,
           customerAddress: address,
           createdAt: now,
+          groupId: groupId,
         );
         OrderStore.addOrder(record);
         final orderId = await OrderNotificationService.submitOrder(record);
         results.add(orderId);
+      }
+
+      if (groupId != null) {
+        try {
+          final callable = FirebaseFunctions.instanceFor(region: 'asia-southeast1')
+              .httpsCallable('notify_order_group');
+          await callable.call({
+            'customerName': name,
+            'customerPhone': phone,
+            'customerAddress': address,
+            'items': widget.items.asMap().entries.map((entry) {
+              final item = entry.value;
+              final extraDiscount = _extraDiscountForItem(item);
+              return {
+                'imageId': item.imageId,
+                'imageUrl': item.imageUrl,
+                'kichThuoc': item.kichThuoc,
+                'cacMatIn': item.cacMatIn,
+                'chatLieu': item.chatLieu,
+                'chatLieuPerMat': item.chatLieuPerMat,
+                'tongTien': item.tongTien - extraDiscount,
+              };
+            }).toList(),
+            'tongTien': _cartTotal,
+          });
+        } catch (e) {
+          // Không chặn luồng đặt hàng nếu gửi thông báo gộp thất bại —
+          // đơn đã lưu server rồi, chỉ mất thông báo Zalo.
+          debugPrint('notify_order_group lỗi: $e');
+        }
       }
 
       OrderStore.clearCart();

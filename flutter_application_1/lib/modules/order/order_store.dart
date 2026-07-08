@@ -16,6 +16,11 @@ class OrderRecord {
   final String customerPhone;
   final String customerAddress;
   final DateTime createdAt;
+  // Khi thanh toán nhiều sản phẩm cùng lúc (giỏ hàng), các đơn cùng lượt
+  // thanh toán chia sẻ 1 groupId — Cloud Function dựa vào đây để KHÔNG tự
+  // gửi Zalo riêng lẻ từng đơn, thay vào đó client gọi notify_order_group
+  // để gộp thành 1 tin nhắn duy nhất.
+  final String? groupId;
 
   const OrderRecord({
     this.orderId,
@@ -33,6 +38,7 @@ class OrderRecord {
     required this.customerPhone,
     required this.customerAddress,
     required this.createdAt,
+    this.groupId,
   });
 
   Map<String, dynamic> toMap() {
@@ -51,6 +57,7 @@ class OrderRecord {
       'customerPhone': customerPhone,
       'customerAddress': customerAddress,
       'createdAt': createdAt.toIso8601String(),
+      if (groupId != null) 'groupId': groupId,
     };
   }
 

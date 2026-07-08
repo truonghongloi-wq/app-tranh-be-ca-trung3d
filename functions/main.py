@@ -335,6 +335,74 @@ def _format_order_msg(order):
     return "\n".join(lines)
 
 
+def _format_group_msg(data):
+    """Gộp nhiều sản phẩm (giỏ hàng thanh toán cùng lượt) thành 1 tin nhắn."""
+    items = data.get("items", [])
+    grand_total = f'{int(data.get("tongTien", 0)):,}'.replace(",", ".")
+
+    lines = [
+        f"🛒 ĐƠN HÀNG MỚI - Tranh Bể Cá 3D ({len(items)} sản phẩm)",
+        "",
+        f"👤 Khách: {data.get('customerName', 'N/A')}",
+        f"📞 SĐT: {data.get('customerPhone', 'N/A')}",
+        f"📍 Địa chỉ: {data.get('customerAddress', 'N/A')}",
+    ]
+
+    for idx, item in enumerate(items, start=1):
+        kt = item.get("kichThuoc", {})
+        cl_per_mat = item.get("chatLieuPerMat", {})
+        cl_default = item.get("chatLieu", "N/A")
+        item_tien = f'{int(item.get("tongTien", 0)):,}'.replace(",", ".")
+
+        lines.append("")
+        lines.append(f"— Sản phẩm {idx}: {item.get('imageId', 'N/A')} —")
+        cac_mat = _as_list(item.get("cacMatIn", []))
+        for mat in cac_mat:
+            size = _panel_size(kt, mat)
+            cl = cl_per_mat.get(mat, cl_default)
+            lines.append(f"📐 Tấm {mat}: {size} cm - {cl}")
+        lines.append(f"💰 {item_tien} đ")
+
+    lines.append("")
+    lines.append(f"💰 TỔNG CỘNG: {grand_total} đ")
+    return "\n".join(lines)
+
+
+@https_fn.on_call(region="asia-southeast1", timeout_sec=60)
+def notify_order_group(req: https_fn.CallableRequest) -> dict:
+    """Gộp nhiều đơn cùng 1 lượt thanh toán giỏ hàng thành 1 tin Zalo duy
+    nhất — gọi bởi client SAU KHI đã lưu xong các đơn (mỗi đơn đó có
+    groupId nên on_order_created sẽ bỏ qua, tránh gửi trùng)."""
+    if req.auth is None:
+        raise https_fn.HttpsError("unauthenticated", "Cần đăng nhập")
+
+    data = req.data or {}
+    items = data.get("items", [])
+    if not items:
+        raise https_fn.HttpsError("invalid-argument", "Thiếu items")
+
+    zalo = _get_zalo_config()
+    if not zalo:
+        print("Zalo OA chưa cấu hình hoặc token hết hạn (notify_order_group)")
+        return {"sent": False}
+
+    at = zalo["access_token"]
+    sk = zalo["secret_key"]
+    uid = zalo["user_id"]
+
+    for item in items:
+        image_url = item.get("imageUrl", "")
+        if image_url:
+            att_id = _upload_image_to_zalo(at, sk, image_url)
+            if att_id:
+                _send_zalo_image(at, sk, uid, att_id)
+
+    msg = _format_group_msg(data)
+    ok = _send_zalo_msg(at, sk, uid, msg)
+    print(f"Zalo OA group text {'OK' if ok else 'FAIL'}")
+    return {"sent": ok}
+
+
 @db_fn.on_value_created(
     reference="orders/{uid}/{order_id}",
     region="asia-southeast1",
@@ -343,6 +411,10 @@ def on_order_created(event: db_fn.Event[Any]) -> None:
     """Auto-send Zalo OA notification when a new order is saved."""
     order = event.data
     if not order or not isinstance(order, dict):
+        return
+
+    if order.get("groupId"):
+        print(f"Bỏ qua auto-notify (thuộc group {order.get('groupId')}, sẽ gộp qua notify_order_group)")
         return
 
     zalo = _get_zalo_config()
