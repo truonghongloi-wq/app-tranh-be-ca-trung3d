@@ -21,7 +21,9 @@ service cloud.firestore {
       allow update: if isAdmin() ||
         (request.auth != null && request.auth.uid == docId &&
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName']));
-      allow delete: if isAdmin();
+      // Khách được xóa doc của chính mình khi xóa tài khoản
+      // (AuthService.deleteAccount xóa Firestore users/{uid}).
+      allow delete: if isAdmin() || (request.auth != null && request.auth.uid == docId);
     }
 
     match /{document=**} {

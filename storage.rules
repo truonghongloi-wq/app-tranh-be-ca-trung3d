@@ -1,0 +1,23 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Ảnh AI ghép tranh: app upload kết quả vào composites/{uid}/{ts}.png
+    // (composite_screen.dart) — chỉ chính chủ được ghi, giới hạn ảnh < 20MB.
+    match /composites/{uid}/{fileName} {
+      allow write: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.size < 20 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    // Ảnh sản phẩm: app duyệt gallery qua REST không đăng nhập nên cần đọc
+    // công khai. Ghi bị khóa với client — chủ shop upload ảnh tranh qua
+    // Firebase Console (Console không bị rules chặn).
+    match /{allPaths=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}
