@@ -184,7 +184,7 @@ def _refresh_zalo_token(refresh_token, app_id, secret_key):
         return {
             "access_token": data["access_token"],
             "refresh_token": data.get("refresh_token", ""),
-            "expires_at": time.time() + data.get("expires_in", 90000),
+            "expires_at": time.time() + float(data.get("expires_in", 90000)),
         }
     except Exception as e:
         print(f"Zalo OA refresh exception: {e}")
@@ -285,6 +285,17 @@ def _send_zalo_image(access_token, secret_key, user_id, attachment_id):
         return False
 
 
+def _as_list(value):
+    """RTDB event payloads (2nd gen triggers) deliver JSON arrays as dicts
+    with numeric string keys ("0", "1", ...) instead of real Python lists —
+    normalize both shapes to an ordered list."""
+    if isinstance(value, list):
+        return value
+    if isinstance(value, dict):
+        return [value[k] for k in sorted(value.keys(), key=lambda x: int(x))]
+    return []
+
+
 def _panel_size(kt, mat):
     """Return 'W x H' for a panel based on dimension keys."""
     d, r, c = kt.get("D", "?"), kt.get("R", "?"), kt.get("C", "?")
@@ -311,7 +322,7 @@ def _format_order_msg(order):
         f"🖼 Mã tranh: {order.get('imageId', 'N/A')}",
     ]
 
-    cac_mat = order.get("cacMatIn", [])
+    cac_mat = _as_list(order.get("cacMatIn", []))
     for mat in cac_mat:
         size = _panel_size(kt, mat)
         cl = cl_per_mat.get(mat, cl_default)
