@@ -3,7 +3,7 @@
     "rules": "database.rules.json"
   },
   "hosting": {
-    "public": "flutter_application_1/hosting",
+    "public": "dashboard-admin/public",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"]
   },
   "functions": [
