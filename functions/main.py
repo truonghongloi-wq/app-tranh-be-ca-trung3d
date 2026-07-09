@@ -309,6 +309,9 @@ def _panel_size(kt, mat):
     return f"{r} x {c}"
 
 
+_MAT_ORDER = ["lưng", "đáy", "hông trái", "hông phải"]
+
+
 def _format_order_msg(order):
     kt = order.get("kichThuoc", {})
     tien = f'{int(order.get("tongTien", 0)):,}'.replace(",", ".")
@@ -336,7 +339,11 @@ def _format_order_msg(order):
 
 
 def _format_group_msg(data):
-    """Gộp nhiều sản phẩm (giỏ hàng thanh toán cùng lượt) thành 1 tin nhắn."""
+    """Gộp nhiều sản phẩm (giỏ hàng thanh toán cùng lượt) thành 1 tin nhắn.
+
+    Mỗi mã tranh vẫn giữ kèm tấm của nó (kích thước, chất liệu) nhưng bỏ
+    tiêu đề "Sản phẩm N" và tiền lẻ từng bức; cuối tin chỉ có 1 dòng tổng
+    số tấm + 1 dòng tổng tiền chung cho cả đơn."""
     items = data.get("items", [])
     grand_total = f'{int(data.get("tongTien", 0)):,}'.replace(",", ".")
 
@@ -346,25 +353,25 @@ def _format_group_msg(data):
         f"👤 Khách: {data.get('customerName', 'N/A')}",
         f"📞 SĐT: {data.get('customerPhone', 'N/A')}",
         f"📍 Địa chỉ: {data.get('customerAddress', 'N/A')}",
+        "",
     ]
 
-    for idx, item in enumerate(items, start=1):
+    total_panels = 0
+    for item in items:
         kt = item.get("kichThuoc", {})
         cl_per_mat = item.get("chatLieuPerMat", {})
         cl_default = item.get("chatLieu", "N/A")
-        item_tien = f'{int(item.get("tongTien", 0)):,}'.replace(",", ".")
 
-        lines.append("")
-        lines.append(f"— Sản phẩm {idx}: {item.get('imageId', 'N/A')} —")
-        cac_mat = _as_list(item.get("cacMatIn", []))
-        for mat in cac_mat:
+        lines.append(f"🖼 Mã tranh: {item.get('imageId', 'N/A')}")
+        for mat in _as_list(item.get("cacMatIn", [])):
             size = _panel_size(kt, mat)
             cl = cl_per_mat.get(mat, cl_default)
             lines.append(f"📐 Tấm {mat}: {size} cm - {cl}")
-        lines.append(f"💰 {item_tien} đ")
+            total_panels += 1
+        lines.append("")
 
-    lines.append("")
-    lines.append(f"💰 TỔNG CỘNG: {grand_total} đ")
+    lines.append(f"📊 Tổng số tấm: {total_panels} tấm")
+    lines.append(f"💰 Tổng tiền: {grand_total} đ")
     return "\n".join(lines)
 
 
