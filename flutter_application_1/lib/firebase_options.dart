@@ -61,23 +61,23 @@ class DefaultFirebaseOptions {
   );
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyBfRduYzPZqeWKh2-wheJQmBZ1dYvO--Pc',
-    appId: '1:963357026859:ios:a21b1ce97801dcb28a586e',
+    appId: '1:963357026859:ios:cb28e74c71fcfe338a586e',
     messagingSenderId: '963357026859',
     projectId: 'apptranhbeca',
     databaseURL: 'https://apptranhbeca-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'apptranhbeca.firebasestorage.app',
-    iosClientId: '963357026859-a6ugsvq6on5gdhdu46gj3u4tbvigikbj.apps.googleusercontent.com',
-    iosBundleId: 'com.example.flutterApplication1',
+    iosClientId: '963357026859-6h4ifbl4pjh7f42got3q8qa8c7jmnddb.apps.googleusercontent.com',
+    iosBundleId: 'trung3d.apptranhbeca',
   );
   static const FirebaseOptions macos = FirebaseOptions(
     apiKey: 'AIzaSyBfRduYzPZqeWKh2-wheJQmBZ1dYvO--Pc',
-    appId: '1:963357026859:ios:a21b1ce97801dcb28a586e',
+    appId: '1:963357026859:ios:cb28e74c71fcfe338a586e',
     messagingSenderId: '963357026859',
     projectId: 'apptranhbeca',
     databaseURL: 'https://apptranhbeca-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'apptranhbeca.firebasestorage.app',
-    iosClientId: '963357026859-a6ugsvq6on5gdhdu46gj3u4tbvigikbj.apps.googleusercontent.com',
-    iosBundleId: 'com.example.flutterApplication1',
+    iosClientId: '963357026859-6h4ifbl4pjh7f42got3q8qa8c7jmnddb.apps.googleusercontent.com',
+    iosBundleId: 'trung3d.apptranhbeca',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(

@@ -12,8 +12,7 @@ class FavoriteStore {
   static final ValueNotifier<List<FavoriteItem>> favorites =
       ValueNotifier<List<FavoriteItem>>([]);
 
-  static bool isFavorite(String id) =>
-      favorites.value.any((f) => f.id == id);
+  static bool isFavorite(String id) => favorites.value.any((f) => f.id == id);
 
   static String _safeKey(String id) =>
       id.replaceAll(RegExp(r'[.#$\[\]/]'), '_');
@@ -22,8 +21,9 @@ class FavoriteStore {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
     try {
-      final snap =
-          await FirebaseDatabase.instance.ref('users/$uid/favorites').get();
+      final snap = await FirebaseDatabase.instance
+          .ref('users/$uid/favorites')
+          .get();
       if (!snap.exists) return;
       final raw = snap.value;
       if (raw is! Map) return;
@@ -62,9 +62,10 @@ class FavoriteStore {
             .ref('users/$uid/favorites/$key')
             .remove();
       } else {
-        await FirebaseDatabase.instance
-            .ref('users/$uid/favorites/$key')
-            .set({'id': item.id, 'url': item.url});
+        await FirebaseDatabase.instance.ref('users/$uid/favorites/$key').set({
+          'id': item.id,
+          'url': item.url,
+        });
       }
     } catch (e) {
       debugPrint('[FavoriteStore] toggle error: $e');

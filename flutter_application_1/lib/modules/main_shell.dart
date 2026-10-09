@@ -1,3 +1,4 @@
+import '../widgets/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'home/home_page.dart';
 import 'products/products_page.dart';
@@ -30,49 +31,75 @@ class _MainShellState extends State<MainShell> {
       body: IndexedStack(
         index: _currentIndex,
         children: [
-          HomePage(onGiftTap: () => _switchTab(2)),
+          HomePage(
+            onGiftTap: () => _switchTab(2),
+            onAvatarTap: () => _switchTab(3),
+          ),
           const ProductsPage(),
           const GiftPage(),
           const ProfilePage(),
         ],
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: _switchTab,
-        type: BottomNavigationBarType.fixed,
-        backgroundColor:
-            Theme.of(context).bottomNavigationBarTheme.backgroundColor,
-        selectedItemColor:
-            Theme.of(context).bottomNavigationBarTheme.selectedItemColor,
-        unselectedItemColor:
-            Theme.of(context).bottomNavigationBarTheme.unselectedItemColor,
-        selectedLabelStyle: const TextStyle(
-          fontWeight: FontWeight.w600,
-          fontSize: 12,
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          border: Border(
+            top: BorderSide(
+              color: const Color(0xFF2563EB).withValues(alpha: 0.08),
+            ),
+          ),
+          boxShadow: Theme.of(context).brightness == Brightness.dark
+              ? null
+              : [
+                  BoxShadow(
+                    color: const Color(0xFF2563EB).withValues(alpha: 0.06),
+                    blurRadius: 20,
+                    offset: const Offset(0, -4),
+                  ),
+                ],
         ),
-        unselectedLabelStyle: const TextStyle(fontSize: 11),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home_rounded),
-            label: 'Trang chủ',
+        child: BottomNavigationBar(
+          currentIndex: _currentIndex,
+          onTap: _switchTab,
+          type: BottomNavigationBarType.fixed,
+          elevation: 0,
+          backgroundColor: Theme.of(
+            context,
+          ).bottomNavigationBarTheme.backgroundColor,
+          selectedItemColor: Theme.of(
+            context,
+          ).bottomNavigationBarTheme.selectedItemColor,
+          unselectedItemColor: const Color(0xFF94A3B8),
+          selectedLabelStyle: const TextStyle(
+            fontWeight: FontWeight.w700,
+            fontSize: 12,
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.grid_view_outlined),
-            activeIcon: Icon(Icons.grid_view_rounded),
-            label: 'Sản phẩm',
+          unselectedLabelStyle: const TextStyle(
+            fontWeight: FontWeight.w500,
+            fontSize: 12,
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.card_giftcard_outlined),
-            activeIcon: Icon(Icons.card_giftcard_rounded),
-            label: 'Quà tặng',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline_rounded),
-            activeIcon: Icon(Icons.person_rounded),
-            label: 'Cá nhân',
-          ),
-        ],
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(PhosphorIconsRegular.house),
+              activeIcon: Icon(PhosphorIconsFill.house),
+              label: 'Trang chủ',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(PhosphorIconsRegular.squaresFour),
+              activeIcon: Icon(PhosphorIconsFill.squaresFour),
+              label: 'Sản phẩm',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(PhosphorIconsRegular.gift),
+              activeIcon: Icon(PhosphorIconsFill.gift),
+              label: 'Quà tặng',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(PhosphorIconsRegular.user),
+              activeIcon: Icon(PhosphorIconsFill.user),
+              label: 'Cá nhân',
+            ),
+          ],
+        ),
       ),
     );
   }

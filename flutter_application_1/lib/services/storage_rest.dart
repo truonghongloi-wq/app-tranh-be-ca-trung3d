@@ -87,12 +87,19 @@ class StorageRest {
     int limit = 100,
     bool forceRefresh = false,
   }) async {
-    final all = await _listFilesWithMeta(
-      prefix,
-      maxResults: 1000,
-      fetchAllPages: true,
-      forceRefresh: forceRefresh,
+    // Quét toàn bucket: chỉ quét trong các thư mục chủ đề tranh, bỏ ảnh riêng của khách
+    final folders = prefix.isEmpty ? await listSubFolders('') : [prefix];
+    final lists = await Future.wait(
+      folders.map(
+        (f) => _listFilesWithMeta(
+          f,
+          maxResults: 1000,
+          fetchAllPages: true,
+          forceRefresh: forceRefresh,
+        ),
+      ),
     );
+    final all = lists.expand((l) => l);
     final imagesOnly = all.where((f) => _isImagePath(f.fullPath)).toList();
     imagesOnly.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
     return imagesOnly.take(limit).toList();
@@ -173,7 +180,16 @@ class StorageRest {
     return result;
   }
 
-  // Liệt kê các folder con trực tiếp trong prefix
+  // Thư mục dữ liệu riêng của khách (ảnh đại diện, ảnh AI ghép), không phải chủ đề tranh
+  static const _privateFolders = {'avatars', 'composites'};
+
+  static bool _isPrivateFolder(String folderPath) {
+    final parts = folderPath.split('/').where((s) => s.isNotEmpty);
+    return parts.isNotEmpty &&
+        _privateFolders.contains(parts.last.toLowerCase());
+  }
+
+  // Liệt kê các folder con trực tiếp trong prefix (bỏ qua thư mục riêng của khách)
   static Future<List<String>> listSubFolders(String prefix) async {
     final params = <String, String>{
       'prefix': prefix.isEmpty ? '' : (prefix.endsWith('/') ? prefix : '$prefix/'),
@@ -188,7 +204,10 @@ class StorageRest {
       client.close();
       if (res.statusCode != 200) return [];
       final json = jsonDecode(body) as Map<String, dynamic>;
-      return ((json['prefixes'] as List?) ?? []).cast<String>();
+      return ((json['prefixes'] as List?) ?? [])
+          .cast<String>()
+          .where((fp) => !_isPrivateFolder(fp))
+          .toList();
     } catch (_) {
       return [];
     }

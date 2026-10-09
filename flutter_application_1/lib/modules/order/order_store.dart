@@ -1,5 +1,34 @@
 import 'package:flutter/foundation.dart';
 
+/// Trạng thái đơn hàng lưu ở field `status` trên Realtime Database.
+/// Đơn cũ chưa có field này được coi là "Chờ xác nhận".
+class OrderStatus {
+  static const choXacNhan = 'cho_xac_nhan';
+  static const choLayHang = 'cho_lay_hang';
+  static const dangGiao = 'dang_giao';
+  static const daGiao = 'da_giao';
+  static const daHuy = 'da_huy';
+
+  /// Thứ tự các bước của đơn (không gồm "Đã hủy").
+  static const flow = [choXacNhan, choLayHang, dangGiao, daGiao];
+  static const all = [...flow, daHuy];
+
+  static String label(String status) => switch (status) {
+    choLayHang => 'Chờ lấy hàng',
+    dangGiao => 'Chờ giao hàng',
+    daGiao => 'Đã giao',
+    daHuy => 'Đã hủy',
+    _ => 'Chờ xác nhận',
+  };
+
+  /// Bước kế tiếp trong luồng xử lý (null nếu đã kết thúc).
+  static String? next(String status) {
+    final i = flow.indexOf(status);
+    if (i < 0 || i >= flow.length - 1) return null;
+    return flow[i + 1];
+  }
+}
+
 class OrderRecord {
   final String? orderId; // Khóa đơn trên server (null khi chưa lưu)
   final String imageId;
@@ -21,6 +50,16 @@ class OrderRecord {
   // gửi Zalo riêng lẻ từng đơn, thay vào đó client gọi notify_order_group
   // để gộp thành 1 tin nhắn duy nhất.
   final String? groupId;
+  final String status;
+  // Mốc thời gian từng trạng thái: {status: thời điểm}
+  final Map<String, DateTime> timeline;
+  final String? cancelReason;
+  // Mã vận đơn + đơn vị vận chuyển: admin nhập tay sau khi gửi hàng
+  // (không tự sinh) — null khi chưa có.
+  final String? maVanDon;
+  final String? donViVanChuyen;
+  // uid chủ đơn (chỉ có khi đọc về từ server, dùng cho trang quản trị)
+  final String? ownerUid;
 
   const OrderRecord({
     this.orderId,
@@ -39,7 +78,15 @@ class OrderRecord {
     required this.customerAddress,
     required this.createdAt,
     this.groupId,
+    this.status = OrderStatus.choXacNhan,
+    this.timeline = const {},
+    this.cancelReason,
+    this.maVanDon,
+    this.donViVanChuyen,
+    this.ownerUid,
   });
+
+  bool get canCancel => status == OrderStatus.choXacNhan;
 
   Map<String, dynamic> toMap() {
     return {
@@ -58,19 +105,24 @@ class OrderRecord {
       'customerAddress': customerAddress,
       'createdAt': createdAt.toIso8601String(),
       if (groupId != null) 'groupId': groupId,
+      'status': OrderStatus.choXacNhan,
+      'timeline': {OrderStatus.choXacNhan: createdAt.toIso8601String()},
     };
   }
 
   // Tạo OrderRecord từ dữ liệu đọc về từ Realtime Database.
-  factory OrderRecord.fromMap(String orderId, Map<dynamic, dynamic> map) {
+  factory OrderRecord.fromMap(
+    String orderId,
+    Map<dynamic, dynamic> map, {
+    String? ownerUid,
+  }) {
     Map<String, String> strMap(dynamic v) => (v is Map)
         ? v.map((k, val) => MapEntry(k.toString(), val?.toString() ?? ''))
         : <String, String>{};
     List<String> strList(dynamic v) =>
         (v is List) ? v.map((e) => e.toString()).toList() : <String>[];
-    double toD(dynamic v) => (v is num)
-        ? v.toDouble()
-        : double.tryParse(v?.toString() ?? '') ?? 0;
+    double toD(dynamic v) =>
+        (v is num) ? v.toDouble() : double.tryParse(v?.toString() ?? '') ?? 0;
 
     return OrderRecord(
       orderId: orderId,
@@ -90,8 +142,29 @@ class OrderRecord {
       customerPhone: map['customerPhone']?.toString() ?? '',
       customerAddress: map['customerAddress']?.toString() ?? '',
       createdAt:
-          DateTime.tryParse(map['createdAt']?.toString() ?? '') ?? DateTime.now(),
+          DateTime.tryParse(map['createdAt']?.toString() ?? '') ??
+          DateTime.now(),
+      groupId: map['groupId']?.toString(),
+      status: OrderStatus.all.contains(map['status'])
+          ? map['status'] as String
+          : OrderStatus.choXacNhan,
+      timeline: (map['timeline'] is Map)
+          ? {
+              for (final e in (map['timeline'] as Map).entries)
+                if (DateTime.tryParse(e.value?.toString() ?? '') != null)
+                  e.key.toString(): DateTime.parse(e.value.toString()),
+            }
+          : const {},
+      cancelReason: map['cancelReason']?.toString(),
+      maVanDon: _nonEmpty(map['maVanDon']),
+      donViVanChuyen: _nonEmpty(map['donViVanChuyen']),
+      ownerUid: ownerUid,
     );
+  }
+
+  static String? _nonEmpty(dynamic v) {
+    final s = v?.toString().trim() ?? '';
+    return s.isEmpty ? null : s;
   }
 }
 

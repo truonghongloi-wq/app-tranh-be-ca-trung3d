@@ -9,10 +9,33 @@
         ".read": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin')",
         "$orderId": {
           ".write": "auth != null && auth.uid === $uid && !data.exists() && newData.exists()",
-          ".validate": "newData.hasChildren(['customerName', 'customerPhone', 'customerAddress', 'tongTien'])",
+          ".validate": "newData.hasChildren(['customerName', 'customerPhone', 'customerAddress', 'tongTien']) && (data.exists() || (!newData.child('maVanDon').exists() && !newData.child('donViVanChuyen').exists() && !newData.child('cancelReason').exists()))",
           "customerName": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 200" },
           "customerPhone": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 30" },
           "customerAddress": { ".validate": "newData.isString() && newData.val().length <= 500" },
+          "tongTien": { ".validate": "newData.isNumber() && newData.val() > 0" },
+          "status": {
+            ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || (auth.uid === $uid && newData.val() === 'da_huy' && (!data.exists() || data.val() === 'cho_xac_nhan')))",
+            ".validate": "newData.isString() && newData.val().matches(/^(cho_xac_nhan|cho_lay_hang|dang_giao|da_giao|da_huy)$/) && (data.parent().exists() || newData.val() === 'cho_xac_nhan')"
+          },
+          "timeline": {
+            "$st": {
+              ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || (auth.uid === $uid && $st === 'da_huy' && newData.parent().parent().child('status').val() === 'da_huy' && (!data.parent().parent().child('status').exists() || data.parent().parent().child('status').val() === 'cho_xac_nhan')))",
+              ".validate": "newData.isString() && newData.val().length <= 40"
+            }
+          },
+          "cancelReason": {
+            ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || (auth.uid === $uid && newData.parent().child('status').val() === 'da_huy' && (!data.parent().child('status').exists() || data.parent().child('status').val() === 'cho_xac_nhan')))",
+            ".validate": "newData.isString() && newData.val().length <= 200"
+          },
+          "maVanDon": {
+            ".write": "root.child('users').child(auth.uid).child('role').val() === 'admin'",
+            ".validate": "newData.isString() && newData.val().length <= 60"
+          },
+          "donViVanChuyen": {
+            ".write": "root.child('users').child(auth.uid).child('role').val() === 'admin'",
+            ".validate": "newData.isString() && newData.val().length <= 60"
+          },
           "$other": { ".validate": true }
         }
       }
@@ -27,7 +50,13 @@
           ".validate": "root.child('users').child(auth.uid).child('role').val() === 'admin' || newData.val() === 'customer'"
         },
         "prices": {
-          ".write": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin')"
+          ".validate": "root.child('users').child(auth.uid).child('role').val() === 'admin'"
+        },
+        "email": {
+          ".validate": "newData.isString() && (newData.val() === auth.token.email || root.child('users').child(auth.uid).child('role').val() === 'admin')"
+        },
+        "displayName": {
+          ".validate": "newData.isString() && newData.val().length <= 100"
         },
         "$other": { ".validate": true }
       }
@@ -38,9 +67,26 @@
       ".write": false
     },
 
+    "ai_reports": {
+      ".read": "root.child('users').child(auth.uid).child('role').val() === 'admin'",
+      "$uid": {
+        "$reportId": {
+          ".write": "auth != null && auth.uid === $uid && !data.exists() && newData.exists()",
+          ".validate": "newData.hasChildren(['reason', 'createdAt'])",
+          "reason": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 200" },
+          "paintingUrl": { ".validate": "newData.isString() && newData.val().length <= 1000" },
+          "createdAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+          "$other": { ".validate": false }
+        }
+      }
+    },
+
     "composite_quota": {
       ".read": false,
-      ".write": false
+      ".write": false,
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid"
+      }
     }
   }
 }

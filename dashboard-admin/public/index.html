@@ -336,7 +336,23 @@
     signOut(auth);
   };
 
+  // Escape mọi dữ liệu do khách nhập (tên, email, ghi chú...) trước khi đưa
+  // vào innerHTML — chống chèn mã độc (XSS) chạy bằng quyền admin.
+  const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[c]);
+
+  // Tài khoản quản trị duy nhất (khớp _ADMIN_EMAIL ở Cloud Function và firestore.rules)
+  const ADMIN_EMAIL = 'tranhbeca2018@gmail.com';
+
   onAuthStateChanged(auth, (user) => {
+    if (user && (user.email || '').toLowerCase() !== ADMIN_EMAIL) {
+      signOut(auth);
+      const errorEl = document.getElementById('login-error');
+      errorEl.textContent = 'Tài khoản này không có quyền quản trị.';
+      errorEl.style.display = 'block';
+      return;
+    }
     if (user) {
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('app-container').style.display = 'flex';
@@ -532,20 +548,29 @@
         : `<span title="Khách sỉ tự thêm tay (CRM)" style="display:inline-block;margin-left:6px;padding:1px 7px;border-radius:10px;font-size:10px;background:#f3e5f5;color:#7b1fa2;">✍️ CRM</span>`;
       return `
       <tr>
-        <td><strong>${getCustomerName(u)}</strong>${badge}</td>
-        <td>${u.email || '–'}</td>
-        <td>${u.phone || '–'}</td>
-        <td><strong style="color:var(--primary);">${priceDisplay}</strong></td>
-        <td>${u.shipPrice ? fmt(u.shipPrice) : '–'}</td>
-        <td>${u.notes || '–'}</td>
+        <td><strong>${esc(getCustomerName(u))}</strong>${badge}</td>
+        <td>${esc(u.email || '–')}</td>
+        <td>${esc(u.phone || '–')}</td>
+        <td><strong style="color:var(--primary);">${esc(priceDisplay)}</strong></td>
+        <td>${u.shipPrice ? esc(fmt(u.shipPrice)) : '–'}</td>
+        <td>${esc(u.notes || '–')}</td>
         <td style="white-space:nowrap;">
-          <button class="btn btn-primary btn-sm" onclick="editUser('${u._key}')">✏️</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteUser('${u._key}')">🗑️</button>
+          <button class="btn btn-primary btn-sm" data-action="edit" data-key="${esc(u._key)}">✏️</button>
+          <button class="btn btn-danger btn-sm" data-action="delete" data-key="${esc(u._key)}">🗑️</button>
         </td>
       </tr>
     `;
     }).join('');
   };
+
+  // Bảng khách: nút sửa/xóa đọc khóa từ data-key (không ghép chuỗi vào onclick).
+  document.addEventListener('click', (ev) => {
+    const btn = ev.target.closest('button[data-action][data-key]');
+    if (!btn) return;
+    const key = btn.dataset.key;
+    if (btn.dataset.action === 'edit') window.editUser(key);
+    else if (btn.dataset.action === 'delete') window.deleteUser(key);
+  });
 
   window.filterUsers = function() {
     const search = document.getElementById('search-input').value.toLowerCase();
@@ -575,7 +600,7 @@
     tbody.innerHTML = recent.map(u => {
       const epoch = toEpochSeconds(u.createdAt);
       const date = epoch ? new Date(epoch * 1000).toLocaleDateString('vi-VN') : '–';
-      return `<tr><td>${getCustomerName(u)}</td><td>${u.email || '–'}</td><td>${u.phone || '–'}</td><td><strong>${fmt(u.price || 0)}</strong></td><td>${date}</td></tr>`;
+      return `<tr><td>${esc(getCustomerName(u))}</td><td>${esc(u.email || '–')}</td><td>${esc(u.phone || '–')}</td><td><strong>${esc(fmt(u.price || 0))}</strong></td><td>${esc(date)}</td></tr>`;
     }).join('') || '<tr><td colspan="5" style="text-align:center;">Không có dữ liệu</td></tr>';
   };
 
@@ -584,7 +609,7 @@
     const sorted = [...allUsers].sort((a, b) => (b.price || 0) - (a.price || 0));
     tbody.innerHTML = sorted.map(u => {
       const revenue = (u.price || 0) * 100;
-      return `<tr><td><strong>${getCustomerName(u)}</strong></td><td>${fmt(u.price || 0)}</td><td style="color:var(--primary);font-weight:700;">~${fmt(revenue)}</td></tr>`;
+      return `<tr><td><strong>${esc(getCustomerName(u))}</strong></td><td>${esc(fmt(u.price || 0))}</td><td style="color:var(--primary);font-weight:700;">~${esc(fmt(revenue))}</td></tr>`;
     }).join('') || '<tr><td colspan="3" style="text-align:center;">Không có dữ liệu</td></tr>';
   };
 
@@ -653,6 +678,10 @@
   window.deleteUser = async function(key) {
     const user = allUsers.find(u => u._key === key);
     if (!user) return;
+    if ((user.email || '').toLowerCase() === ADMIN_EMAIL) {
+      window.showToast('❌ Không thể xóa tài khoản quản trị', 'error');
+      return;
+    }
 
     const warning = user.registered
       ? `Khách này ĐÃ ĐĂNG KÝ tài khoản trong app (${user.email}).\nXóa sẽ hủy hẳn tài khoản đăng nhập của khách — khách sẽ không đăng nhập được nữa.\nLịch sử đơn hàng vẫn được giữ lại.\n\nBạn chắc chắn muốn xóa?`

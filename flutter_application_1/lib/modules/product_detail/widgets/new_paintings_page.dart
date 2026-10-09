@@ -1,7 +1,9 @@
+import '../../../widgets/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../product_detail_page.dart';
 import '../../../services/storage_rest.dart';
+import '../../../widgets/app_ui.dart';
 
 class NewPaintingsPage extends StatefulWidget {
   const NewPaintingsPage({super.key});
@@ -25,9 +27,7 @@ class _NewPaintingsPageState extends State<NewPaintingsPage> {
       limit: 100,
       forceRefresh: true,
     );
-    return latest
-        .map((f) => _StorageItem(name: f.name, url: f.url))
-        .toList();
+    return latest.map((f) => _StorageItem(name: f.name, url: f.url)).toList();
   }
 
   @override
@@ -36,10 +36,7 @@ class _NewPaintingsPageState extends State<NewPaintingsPage> {
     final isDark = theme.brightness == Brightness.dark;
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: const Text("Tranh Mới Cập Nhật"),
-        backgroundColor: Colors.green,
-      ),
+      appBar: appSubAppBar(context, 'Tranh mới cập nhật'),
       body: FutureBuilder<List<_StorageItem>>(
         future: _imagesFuture,
         builder: (context, snapshot) {
@@ -95,8 +92,11 @@ class _NewPaintingsPageState extends State<NewPaintingsPage> {
                             ),
                           ),
                           errorWidget: (context, url, error) => Container(
-                            color: Colors.green[100],
-                            child: const Icon(Icons.broken_image, color: Colors.green),
+                            color: Colors.grey[200],
+                            child: const Icon(
+                              PhosphorIconsRegular.imageBroken,
+                              color: Colors.grey,
+                            ),
                           ),
                         ),
                       ),

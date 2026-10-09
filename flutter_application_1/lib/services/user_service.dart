@@ -128,7 +128,6 @@ class UserService {
         'displayName': displayName,
         'createdAt': DateTime.now().toIso8601String(),
         'role': 'customer',
-        'prices': PriceConfig.defaults.toMap(),
       });
     } catch (e) {
       debugPrint('[UserService] saveNewUser lỗi: $e');
@@ -175,11 +174,15 @@ class UserService {
     return PriceConfig.defaults;
   }
 
+  // Tài khoản quản trị duy nhất (khớp _ADMIN_EMAIL ở Cloud Function, firestore.rules, Dashboard web)
+  static const adminEmail = 'tranhbeca2018@gmail.com';
+
   // Kiểm tra user hiện tại có phải admin không
   static Future<bool> isCurrentUserAdmin() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return false;
+      if (user.email?.toLowerCase() != adminEmail) return false;
       final snapshot = await FirebaseDatabase.instance
           .ref('users/${user.uid}/role')
           .get()

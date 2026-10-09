@@ -4,18 +4,39 @@ service firebase.storage {
   match /b/{bucket}/o {
 
     // Ảnh AI ghép tranh: app upload kết quả vào composites/{uid}/{ts}.png
-    // (composite_screen.dart) — chỉ chính chủ được ghi, giới hạn ảnh < 20MB.
+    // (composite_screen.dart) — chỉ chính chủ được đọc/ghi/xóa, ảnh < 20MB.
     match /composites/{uid}/{fileName} {
+      allow read: if request.auth != null && request.auth.uid == uid;
       allow write: if request.auth != null
         && request.auth.uid == uid
-        && request.resource.size < 20 * 1024 * 1024
-        && request.resource.contentType.matches('image/.*');
+        && (request.resource == null
+          || (request.resource.size < 20 * 1024 * 1024
+            && request.resource.contentType.matches('image/.*')));
+    }
+
+    // Ảnh đại diện: avatars/{uid}/avatar.jpg (avatar_service.dart) — chỉ chính
+    // chủ được đọc/ghi/xóa, ảnh < 5MB.
+    match /avatars/{uid}/{fileName} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if request.auth != null
+        && request.auth.uid == uid
+        && (request.resource == null
+          || (request.resource.size < 5 * 1024 * 1024
+            && request.resource.contentType.matches('image/.*')));
     }
 
     // Ảnh sản phẩm: app duyệt gallery qua REST không đăng nhập nên cần đọc
     // công khai. Ghi bị khóa với client — chủ shop upload ảnh tranh qua
     // Firebase Console (Console không bị rules chặn).
-    match /{allPaths=**} {
+    // Trừ avatars/ và composites/ (ảnh riêng của khách): không liệt kê/đọc công khai.
+    // Link có token (getDownloadURL, lưu trong đơn hàng/photoURL) vẫn xem được.
+    match /{folder}/{rest=**} {
+      allow read: if folder != 'avatars' && folder != 'composites';
+      allow write: if false;
+    }
+
+    // File ở gốc bucket và việc liệt kê danh sách chủ đề
+    match /{fileName} {
       allow read: if true;
       allow write: if false;
     }

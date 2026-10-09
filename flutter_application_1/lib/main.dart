@@ -46,6 +46,12 @@ class AquaDecorApp extends StatelessWidget {
           darkTheme: ThemeStore.darkTheme,
           themeMode: themeMode,
           home: const AuthGate(),
+          // Chạm ra ngoài ô nhập ở bất kỳ màn hình nào để thu bàn phím
+          builder: (context, child) => GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+            child: child,
+          ),
         );
       },
     );

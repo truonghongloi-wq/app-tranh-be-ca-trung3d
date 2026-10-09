@@ -4,362 +4,648 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chính sách bảo mật - Tranh Bể Cá 3D</title>
+    <meta name="description" content="Chính sách bảo mật của ứng dụng Tranh Bể Cá 3D: dữ liệu thu thập, mục đích sử dụng, chia sẻ, lưu trữ và cách xóa tài khoản.">
+    <link rel="icon" type="image/png" href="logo.png">
+    <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#1E293B" media="(prefers-color-scheme: dark)">
     <style>
+        /* Đồng bộ với giao diện app (lib/widgets/app_ui.dart) */
+        :root {
+            --blue: #2563EB;
+            --sky: #5CC1FF;
+            --accent: var(--blue);
+            --ink: #1E293B;
+            --muted: #64748B;
+            --body: #334155;
+            --bg: #F4F7F9;
+            --card: #FFFFFF;
+            --line: #E2E8F0;
+            --chip: #F1F5F9;
+            --tint: rgba(37, 99, 235, .08);
+            --shadow: 0 4px 20px rgba(37, 99, 235, .07);
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --accent: var(--sky);
+                --ink: #FFFFFF;
+                --muted: rgba(255, 255, 255, .6);
+                --body: rgba(255, 255, 255, .82);
+                --bg: #0F172A;
+                --card: #1E293B;
+                --line: rgba(255, 255, 255, .1);
+                --chip: rgba(255, 255, 255, .08);
+                --tint: rgba(92, 193, 255, .15);
+                --shadow: none;
+            }
+        }
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; scroll-padding-top: 80px; }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f4f7f9;
-            color: #1b3a4b;
-            line-height: 1.7;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: var(--bg);
+            color: var(--body);
+            line-height: 1.65;
+            -webkit-font-smoothing: antialiased;
         }
-        header {
-            background: linear-gradient(135deg, #5cc1ff, #2b678b);
-            color: #fff;
-            padding: 40px 20px 20px;
-            text-align: center;
+
+        /* Đầu trang trắng như AppTabHeader trong app */
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: var(--card);
+            border-bottom: 1px solid var(--line);
         }
-        header h1 { font-size: 26px; margin-bottom: 6px; }
-        header p { font-size: 14px; opacity: .8; }
+        .topbar-inner {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .brand { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+        .brand img { width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0; }
+        .brand-name {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--ink);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
         .lang-switcher {
             display: flex;
-            justify-content: center;
-            gap: 8px;
-            margin-top: 16px;
+            background: var(--chip);
+            border-radius: 999px;
+            padding: 4px;
+            flex-shrink: 0;
         }
         .lang-btn {
-            padding: 7px 20px;
-            border: 2px solid rgba(255,255,255,.5);
-            border-radius: 20px;
+            border: 0;
             background: transparent;
-            color: #fff;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all .2s;
-        }
-        .lang-btn:hover { background: rgba(255,255,255,.15); }
-        .lang-btn.active {
-            background: #fff;
-            color: #2b678b;
-            border-color: #fff;
-        }
-        .container {
-            max-width: 800px;
-            margin: 30px auto;
-            padding: 0 20px 60px;
-        }
-        section {
-            background: #fff;
-            border-radius: 14px;
-            padding: 24px 28px;
-            margin-bottom: 18px;
-            box-shadow: 0 2px 8px rgba(0,0,0,.06);
-        }
-        h2 {
-            color: #2b678b;
-            font-size: 18px;
-            margin-bottom: 12px;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #e8f0f5;
-        }
-        p, li { font-size: 15px; color: #3a5a6e; }
-        ul { padding-left: 22px; margin-top: 8px; }
-        li { margin-bottom: 6px; }
-        strong { color: #1b3a4b; }
-        a { color: #2b678b; }
-        .updated {
-            text-align: center;
+            color: var(--muted);
+            font: inherit;
             font-size: 13px;
-            color: #8a9fae;
-            margin-top: 30px;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: background .2s, color .2s;
         }
+        .lang-btn.active {
+            background: var(--card);
+            color: var(--accent);
+            box-shadow: 0 1px 4px rgba(15, 23, 42, .12);
+        }
+
+        .container { max-width: 760px; margin: 0 auto; padding: 24px 16px 40px; }
+        .hero { padding: 8px 4px 20px; }
+        .hero h1 {
+            font-size: 28px;
+            line-height: 1.25;
+            font-weight: 800;
+            color: var(--ink);
+            letter-spacing: -.01em;
+        }
+        .hero p { margin-top: 6px; color: var(--muted); font-size: 15px; }
+        .updated {
+            display: inline-block;
+            margin-top: 12px;
+            padding: 4px 12px;
+            border-radius: 999px;
+            background: var(--tint);
+            color: var(--accent);
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        /* Mục lục */
+        .toc {
+            background: var(--card);
+            border-radius: 18px;
+            box-shadow: var(--shadow);
+            padding: 18px 20px;
+            margin-bottom: 16px;
+        }
+        .toc-title { font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 10px; }
+        .toc ol { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; }
+        .toc li { padding: 0; margin: 0; }
+        .toc li::before { display: none; }
+        .toc a {
+            display: block;
+            padding: 6px 12px;
+            border-radius: 999px;
+            background: var(--chip);
+            color: var(--ink);
+            font-size: 13px;
+            font-weight: 500;
+            text-decoration: none;
+        }
+        .toc a:hover { background: var(--tint); color: var(--accent); }
+
+        /* Thẻ trắng bo góc như appCardDecoration */
+        section {
+            background: var(--card);
+            border-radius: 18px;
+            box-shadow: var(--shadow);
+            padding: 22px 22px 18px;
+            margin-bottom: 16px;
+        }
+        section.highlight { box-shadow: inset 0 0 0 2px var(--accent), var(--shadow); }
+        h2 {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 18px;
+            line-height: 1.3;
+            font-weight: 700;
+            color: var(--ink);
+            margin-bottom: 12px;
+        }
+        h3 { font-size: 15px; font-weight: 700; color: var(--ink); margin-top: 14px; }
+        .num {
+            width: 32px;
+            height: 32px;
+            flex-shrink: 0;
+            border-radius: 50%;
+            background: var(--tint);
+            color: var(--accent);
+            font-size: 14px;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .highlight .num { background: var(--accent); color: var(--card); }
+        p, li { font-size: 15px; }
+        p + p, p + ul, ul + p, h3 + p { margin-top: 10px; }
+        ul { list-style: none; margin-top: 6px; }
+        li { position: relative; padding-left: 20px; margin-bottom: 6px; }
+        li::before {
+            content: "";
+            position: absolute;
+            left: 4px;
+            top: .68em;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+        }
+        strong { color: var(--ink); font-weight: 600; }
+        a { color: var(--accent); text-underline-offset: 2px; overflow-wrap: anywhere; }
+
         footer {
             text-align: center;
-            padding: 20px;
+            padding: 0 16px 32px;
             font-size: 13px;
-            color: #8a9fae;
+            color: var(--muted);
         }
         .hidden { display: none; }
+
+        @media (max-width: 480px) {
+            .hero h1 { font-size: 24px; }
+            section { padding: 18px 16px 14px; }
+            h2 { font-size: 17px; }
+            .brand-name { font-size: 15px; }
+            .lang-btn { padding: 6px 10px; }
+        }
     </style>
 </head>
 <body>
 
-<header>
-    <h1 id="page-title">Chính Sách Bảo Mật</h1>
-    <p>Tranh Bể Cá 3D</p>
-    <div class="lang-switcher">
-        <button class="lang-btn active" onclick="switchLang('vi')">Tiếng Việt</button>
-        <button class="lang-btn" onclick="switchLang('en')">English</button>
+<header class="topbar">
+    <div class="topbar-inner">
+        <div class="brand">
+            <img src="logo.png" alt="" width="40" height="40">
+            <span class="brand-name">Tranh Bể Cá 3D</span>
+        </div>
+        <div class="lang-switcher" role="group" aria-label="Ngôn ngữ / Language">
+            <button class="lang-btn active" data-lang="vi" onclick="switchLang('vi')">Tiếng Việt</button>
+            <button class="lang-btn" data-lang="en" onclick="switchLang('en')">English</button>
+        </div>
     </div>
 </header>
 
 <!-- ==================== TIẾNG VIỆT ==================== -->
-<div id="content-vi" class="container">
+<main id="content-vi" class="container" lang="vi">
+    <div class="hero">
+        <h1>Chính sách bảo mật</h1>
+        <p>Cách ứng dụng Tranh Bể Cá 3D thu thập, sử dụng, chia sẻ và bảo vệ thông tin của bạn.</p>
+        <span class="updated">Có hiệu lực từ: 08/10/2026</span>
+    </div>
+    <nav class="toc" aria-label="Mục lục">
+        <div class="toc-title">Mục lục</div>
+        <ol></ol>
+    </nav>
 
     <section>
-        <h2>1. Giới thiệu</h2>
-        <p>Tranh Bể Cá 3D ("chúng tôi") cam kết bảo vệ quyền riêng tư của bạn. Chính sách bảo mật này giải thích cách chúng tôi thu thập, sử dụng và bảo vệ thông tin cá nhân của bạn khi sử dụng ứng dụng Tranh Bể Cá 3D ("Ứng dụng").</p>
-        <p>Bằng việc sử dụng Ứng dụng, bạn đồng ý với các điều khoản trong chính sách này.</p>
+        <h2><span class="num">1</span><span>Giới thiệu</span></h2>
+        <p>Chính sách này áp dụng cho ứng dụng di động <strong>Tranh Bể Cá 3D</strong> (mã ứng dụng <strong>trung3d.apptranhbeca</strong>, gọi tắt là "Ứng dụng") do nhà phát triển <strong>Pink_developer</strong> (tên nhà phát triển trên Google Play) phát triển và vận hành cho cửa hàng Tranh Bể Cá 3D (gọi chung là "chúng tôi"). Chúng tôi là bên chịu trách nhiệm xử lý dữ liệu cá nhân của bạn khi bạn dùng Ứng dụng.</p>
+        <p>Chính sách giải thích chúng tôi thu thập những dữ liệu nào, dùng để làm gì, chia sẻ với ai, lưu trong bao lâu và bạn có những quyền gì. Chúng tôi xử lý dữ liệu cá nhân theo quy định pháp luật Việt Nam về bảo vệ dữ liệu cá nhân (Nghị định 13/2023/NĐ-CP) và Chính sách dữ liệu người dùng của Google Play.</p>
+        <p>Bằng việc tạo tài khoản và sử dụng Ứng dụng, bạn xác nhận đã đọc và đồng ý với chính sách này.</p>
     </section>
 
     <section>
-        <h2>2. Thông tin chúng tôi thu thập</h2>
-        <p>Chúng tôi thu thập các loại thông tin sau:</p>
+        <h2><span class="num">2</span><span>Dữ liệu chúng tôi thu thập</span></h2>
 
-        <p><strong>a) Thông tin tài khoản:</strong></p>
+        <h3>a) Thông tin tài khoản (bạn cung cấp khi đăng ký)</h3>
         <ul>
-            <li>Địa chỉ email (đăng ký và đăng nhập)</li>
-            <li>Mật khẩu (được mã hóa, chúng tôi không thể đọc)</li>
+            <li>Địa chỉ email và tên hiển thị</li>
+            <li>Mật khẩu: do Firebase Authentication (Google) lưu dưới dạng mã hóa một chiều, chúng tôi không xem được</li>
+            <li>Ảnh đại diện: chỉ khi bạn tự chọn ảnh trong tab Cá nhân</li>
         </ul>
 
-        <p><strong>b) Thông tin đặt hàng:</strong></p>
+        <h3>b) Thông tin đặt hàng</h3>
         <ul>
-            <li>Họ tên người nhận</li>
-            <li>Số điện thoại</li>
-            <li>Địa chỉ giao hàng (số nhà, đường, phường/xã, tỉnh/thành phố)</li>
-            <li>Chi tiết đơn hàng: mã tranh, kích thước, chất liệu, số lượng, giá tiền</li>
+            <li>Họ tên, số điện thoại và địa chỉ nhận hàng</li>
+            <li>Chi tiết đơn hàng: mã tranh, kích thước, các mặt in, chất liệu, số tấm, giá tiền, trạng thái đơn và mã vận đơn</li>
+            <li>Thông tin nhận hàng của lần đặt gần nhất được lưu vào tài khoản để tự điền sẵn cho lần sau</li>
+            <li>Danh sách tranh bạn đã đánh dấu yêu thích</li>
         </ul>
 
-        <p><strong>c) Hình ảnh:</strong></p>
+        <h3>c) Hình ảnh</h3>
         <ul>
-            <li>Ảnh chụp từ camera hoặc thư viện ảnh (khi sử dụng tính năng xem thử tranh trên bể cá)</li>
-            <li>Hình ảnh được gửi đến dịch vụ AI để ghép tranh lên ảnh bể cá của bạn, sau đó không được lưu trữ vĩnh viễn trên máy chủ</li>
+            <li><strong>Ảnh bể cá</strong> bạn chụp hoặc chọn khi dùng tính năng "Xem thử trên bể": được gửi đến dịch vụ AI để ghép tranh. Ứng dụng không lưu lại ảnh gốc này.</li>
+            <li><strong>Ảnh kết quả ghép AI</strong>: chỉ hiển thị trên máy của bạn và không được lưu lên máy chủ. Nếu muốn giữ, bạn có thể bấm lưu ảnh về thư viện ảnh của điện thoại.</li>
+            <li><strong>Ảnh đại diện</strong>: được lưu trong tài khoản nếu bạn tự chọn, chỉ bạn xem được trong Ứng dụng</li>
+            <li><strong>Báo cáo ảnh AI</strong>: nếu bạn bấm "Báo cáo ảnh", chúng tôi lưu lý do bạn chọn, mẫu tranh liên quan và thời điểm báo cáo (không lưu ảnh bể cá hay ảnh ghép)</li>
         </ul>
 
-        <p><strong>d) Dữ liệu kỹ thuật:</strong></p>
+        <h3>d) Thông tin dành cho khách sỉ</h3>
         <ul>
-            <li>Thông tin thiết bị (hệ điều hành, phiên bản ứng dụng)</li>
-            <li>Nhật ký sử dụng cơ bản để cải thiện dịch vụ</li>
+            <li>Nếu bạn là khách sỉ, cửa hàng có thể lưu thêm số điện thoại, giá sỉ, phí vận chuyển riêng và ghi chú chăm sóc khách hàng gắn với email tài khoản của bạn</li>
         </ul>
-    </section>
 
-    <section>
-        <h2>3. Mục đích sử dụng thông tin</h2>
-        <p>Chúng tôi sử dụng thông tin của bạn để:</p>
+        <h3>e) Dữ liệu kỹ thuật</h3>
         <ul>
-            <li>Tạo và quản lý tài khoản của bạn</li>
-            <li>Xử lý và giao đơn hàng</li>
-            <li>Liên hệ với bạn về đơn hàng (qua điện thoại hoặc Zalo)</li>
-            <li>Cung cấp tính năng xem thử tranh trên bể cá bằng công nghệ AI</li>
-            <li>Cải thiện chất lượng dịch vụ và trải nghiệm người dùng</li>
+            <li>Ứng dụng <strong>không</strong> dùng công cụ phân tích hành vi, <strong>không</strong> hiển thị quảng cáo và <strong>không</strong> thu thập mã quảng cáo (Advertising ID)</li>
+            <li>Khi kết nối, các dịch vụ Firebase của Google có thể tự động xử lý một số thông tin kỹ thuật như địa chỉ IP, loại thiết bị và tín hiệu toàn vẹn của ứng dụng (Firebase App Check) để chống truy cập trái phép</li>
+            <li>Lựa chọn giao diện sáng/tối chỉ được lưu trên máy của bạn</li>
         </ul>
-    </section>
 
-    <section>
-        <h2>4. Chia sẻ thông tin</h2>
-        <p>Chúng tôi <strong>không bán, cho thuê hoặc trao đổi</strong> thông tin cá nhân của bạn cho bất kỳ bên thứ ba nào vì mục đích thương mại.</p>
-        <p>Thông tin của bạn chỉ được chia sẻ trong các trường hợp:</p>
+        <h3>Dữ liệu chúng tôi không thu thập</h3>
         <ul>
-            <li><strong>Dịch vụ Firebase (Google):</strong> Lưu trữ dữ liệu tài khoản và đơn hàng</li>
-            <li><strong>Dịch vụ AI xử lý ảnh (OpenAI):</strong> Ảnh bể cá bạn tải lên được gửi đến OpenAI để ghép tranh lên ảnh, chỉ phục vụ mục đích xử lý theo yêu cầu của bạn và không được lưu trữ vĩnh viễn</li>
-            <li><strong>Thông báo đơn hàng:</strong> Thông tin đơn hàng được gửi đến hệ thống quản lý nội bộ (Zalo OA) để xử lý đơn</li>
-            <li><strong>Yêu cầu pháp lý:</strong> Khi có yêu cầu từ cơ quan có thẩm quyền theo quy định pháp luật</li>
-        </ul>
-    </section>
-
-    <section>
-        <h2>5. Bảo mật dữ liệu</h2>
-        <p>Chúng tôi áp dụng các biện pháp bảo mật để bảo vệ thông tin của bạn:</p>
-        <ul>
-            <li>Xác thực người dùng qua Firebase Authentication</li>
-            <li>Mật khẩu được mã hóa trước khi lưu trữ</li>
-            <li>Kết nối dữ liệu sử dụng giao thức HTTPS/SSL</li>
-            <li>Firebase App Check để ngăn chặn truy cập trái phép</li>
-            <li>Quy tắc truy cập cơ sở dữ liệu (Database Rules) giới hạn quyền đọc/ghi</li>
+            <li>Vị trí, danh bạ, tin nhắn, lịch sử cuộc gọi</li>
+            <li>Thông tin thẻ ngân hàng hay ví điện tử: Ứng dụng không xử lý thanh toán trực tuyến</li>
         </ul>
     </section>
 
     <section>
-        <h2>6. Quyền truy cập thiết bị</h2>
-        <p>Ứng dụng có thể yêu cầu các quyền sau trên thiết bị của bạn:</p>
+        <h2><span class="num">3</span><span>Mục đích sử dụng dữ liệu</span></h2>
         <ul>
-            <li><strong>Camera:</strong> Chụp ảnh bể cá thực tế của bạn để sử dụng tính năng xem thử tranh trên bể bằng AI</li>
-            <li><strong>Thư viện ảnh:</strong> Chọn ảnh bể cá từ thiết bị để xem thử tranh</li>
-            <li><strong>Internet:</strong> Kết nối đến máy chủ để tải dữ liệu, xử lý ảnh bằng AI và xử lý đơn hàng</li>
+            <li>Tạo, đăng nhập và quản lý tài khoản của bạn</li>
+            <li>Tính giá theo kích thước bể, ghi nhận, sản xuất và giao đơn hàng</li>
+            <li>Liên hệ với bạn về đơn hàng qua điện thoại hoặc Zalo, và cập nhật trạng thái đơn, mã vận đơn trong Ứng dụng</li>
+            <li>Cung cấp tính năng xem thử tranh trên ảnh bể cá bằng AI và xử lý các báo cáo về ảnh AI</li>
+            <li>Áp dụng giá sỉ và chăm sóc khách sỉ</li>
+            <li>Bảo vệ Ứng dụng khỏi truy cập trái phép và lạm dụng (ví dụ: giới hạn số lượt ghép ảnh AI mỗi ngày)</li>
+            <li>Thực hiện nghĩa vụ pháp lý về kế toán, thuế, bảo hành và giải quyết khiếu nại</li>
         </ul>
-        <p>Bạn có thể từ chối cấp quyền bất kỳ lúc nào trong phần cài đặt thiết bị. Một số tính năng sẽ không khả dụng nếu quyền tương ứng bị từ chối.</p>
+        <p>Chúng tôi không dùng dữ liệu của bạn cho quảng cáo và không dùng để đưa ra quyết định tự động gây ảnh hưởng pháp lý đến bạn.</p>
     </section>
 
     <section>
-        <h2>7. Lưu trữ dữ liệu</h2>
+        <h2><span class="num">4</span><span>Chia sẻ dữ liệu</span></h2>
+        <p>Chúng tôi <strong>không bán, cho thuê hay trao đổi</strong> dữ liệu cá nhân của bạn. Dữ liệu chỉ được chia sẻ với các bên dưới đây, trong phạm vi cần thiết:</p>
         <ul>
-            <li>Thông tin tài khoản: lưu trữ cho đến khi bạn yêu cầu xóa tài khoản</li>
-            <li>Thông tin đơn hàng: lưu trữ để phục vụ bảo hành và hỗ trợ sau bán hàng</li>
-            <li>Hình ảnh tải lên: chỉ xử lý tạm thời, không lưu trữ vĩnh viễn</li>
+            <li><strong>Google Firebase</strong> (Authentication, Realtime Database, Cloud Firestore, Cloud Storage, Cloud Functions, App Check): hạ tầng lưu trữ và xử lý tài khoản, đơn hàng, hình ảnh.</li>
+            <li><strong>OpenAI</strong>: nhận ảnh bể cá và ảnh mẫu tranh để ghép ảnh khi bạn dùng tính năng "Xem thử trên bể". Ảnh chỉ được dùng cho yêu cầu đó và được OpenAI xử lý theo chính sách dữ liệu API của họ.</li>
+            <li><strong>Zalo (Công ty Cổ phần VNG)</strong>: khi có đơn mới hoặc đơn bị hủy, thông tin đơn (tên, số điện thoại, địa chỉ, chi tiết và ảnh mẫu tranh) được gửi qua Zalo Official Account đến tài khoản Zalo nội bộ của cửa hàng để xử lý đơn</li>
+            <li><strong>Đơn vị vận chuyển</strong> (ví dụ: GHN, GHTK, Viettel Post…): nhận họ tên, số điện thoại và địa chỉ nhận hàng để giao hàng cho bạn</li>
+            <li><strong>Cơ quan nhà nước có thẩm quyền</strong>: khi pháp luật yêu cầu</li>
         </ul>
-        <p>Khi bạn xóa tài khoản trong mục Cá nhân của ứng dụng: email, mật khẩu và hồ sơ tài khoản của bạn bị xóa vĩnh viễn ngay lập tức, không thể khôi phục. Riêng thông tin các đơn hàng đã đặt trước đó (họ tên, số điện thoại, địa chỉ, chi tiết đơn) được giữ lại phục vụ kế toán, bảo hành và giải quyết khiếu nại theo quy định, và không còn gắn với tài khoản đăng nhập nào của bạn.</p>
+        <p>Các dịch vụ bên ngoài như OpenAI hay Firebase có thể xử lý dữ liệu tại máy chủ ngoài Việt Nam. Chúng tôi chỉ chuyển đi dữ liệu cần thiết cho từng chức năng.</p>
     </section>
 
     <section>
-        <h2>8. Quyền của bạn</h2>
-        <p>Bạn có quyền:</p>
+        <h2><span class="num">5</span><span>Bảo mật dữ liệu</span></h2>
         <ul>
-            <li>Truy cập và xem thông tin cá nhân của bạn</li>
-            <li>Yêu cầu chỉnh sửa thông tin không chính xác</li>
-            <li>Yêu cầu xóa tài khoản và dữ liệu cá nhân</li>
-            <li>Rút lại sự đồng ý xử lý dữ liệu</li>
+            <li>Mọi dữ liệu truyền giữa Ứng dụng và máy chủ đều được mã hóa qua HTTPS (TLS)</li>
+            <li>Đăng nhập qua Firebase Authentication. Mật khẩu không bao giờ được lưu ở dạng đọc được.</li>
+            <li>Quy tắc truy cập cơ sở dữ liệu bảo đảm mỗi khách chỉ đọc được dữ liệu của chính mình. Chỉ tài khoản quản trị của cửa hàng xem được đơn hàng để xử lý.</li>
+            <li>Firebase App Check giúp hạn chế các yêu cầu không đến từ Ứng dụng chính thức</li>
+            <li>Giới hạn số lượt dùng tính năng ghép ảnh AI mỗi ngày để chống lạm dụng</li>
         </ul>
-        <p>Để thực hiện các quyền trên, vui lòng liên hệ chúng tôi qua thông tin ở mục 10.</p>
+        <p>Không có hệ thống nào an toàn tuyệt đối. Nếu xảy ra sự cố lộ lọt dữ liệu ảnh hưởng đến bạn, chúng tôi sẽ thông báo và xử lý theo quy định pháp luật.</p>
     </section>
 
     <section>
-        <h2>9. Thay đổi chính sách</h2>
-        <p>Chúng tôi có thể cập nhật chính sách bảo mật này theo thời gian. Mọi thay đổi sẽ được thông báo qua ứng dụng hoặc trang này. Việc tiếp tục sử dụng ứng dụng sau khi cập nhật đồng nghĩa với việc bạn chấp nhận chính sách mới.</p>
-    </section>
-
-    <section>
-        <h2>10. Liên hệ</h2>
-        <p>Nếu bạn có bất kỳ câu hỏi hoặc yêu cầu nào liên quan đến chính sách bảo mật, vui lòng liên hệ:</p>
+        <h2><span class="num">6</span><span>Quyền truy cập trên thiết bị</span></h2>
         <ul>
+            <li><strong>Camera</strong>: chụp ảnh bể cá cho tính năng xem thử tranh bằng AI. Chỉ dùng khi bạn bấm "Chụp ảnh".</li>
+            <li><strong>Ảnh trong máy</strong>: chọn ảnh bể cá hoặc ảnh đại diện qua trình chọn ảnh của hệ thống. Ứng dụng chỉ nhận đúng ảnh bạn chọn.</li>
+            <li><strong>Lưu ảnh vào máy</strong> (Android 9 trở xuống): lưu ảnh ghép AI về thư viện ảnh khi bạn bấm lưu</li>
+            <li><strong>Internet</strong>: tải mẫu tranh, xử lý ảnh AI và gửi đơn hàng</li>
+        </ul>
+        <p>Bạn có thể thu hồi quyền bất cứ lúc nào trong Cài đặt của thiết bị. Khi đó, tính năng tương ứng sẽ không dùng được.</p>
+    </section>
+
+    <section>
+        <h2><span class="num">7</span><span>Thời gian lưu trữ</span></h2>
+        <ul>
+            <li><strong>Tài khoản, ảnh đại diện, thông tin nhận hàng đã lưu và tranh yêu thích</strong>: lưu cho đến khi bạn xóa tài khoản</li>
+            <li><strong>Ảnh bể cá gốc và ảnh kết quả ghép AI</strong>: không lưu trên máy chủ của chúng tôi</li>
+            <li><strong>Số lượt ghép ảnh AI theo ngày</strong>: chỉ là con số đếm, dùng để giới hạn 3 lượt mỗi ngày, không chứa thông tin cá nhân</li>
+            <li><strong>Báo cáo ảnh AI</strong>: lưu để cửa hàng xem xét và cải thiện chất lượng; bạn có thể yêu cầu xóa qua email</li>
+            <li><strong>Thông tin khách sỉ</strong> do cửa hàng quản lý: lưu trong thời gian hợp tác kinh doanh; bạn có thể yêu cầu xóa qua email</li>
+            <li><strong>Đơn hàng đã đặt</strong> (họ tên, số điện thoại, địa chỉ, chi tiết đơn): lưu trong thời hạn pháp luật về kế toán, thuế yêu cầu và để bảo hành, giải quyết khiếu nại, kể cả sau khi bạn xóa tài khoản. Khi đó đơn hàng không còn gắn với tài khoản đăng nhập nào.</li>
+            <li><strong>Tin nhắn thông báo đơn trên Zalo</strong> của cửa hàng: lưu theo cùng thời hạn với đơn hàng</li>
+        </ul>
+    </section>
+
+    <section id="xoa-tai-khoan" class="highlight">
+        <h2><span class="num">8</span><span>Cách xóa tài khoản và dữ liệu</span></h2>
+        <h3>Cách 1: Ngay trong Ứng dụng</h3>
+        <ul>
+            <li>Mở Ứng dụng Tranh Bể Cá 3D và đăng nhập</li>
+            <li>Vào tab <strong>Cá nhân</strong>, kéo xuống mục <strong>Cài đặt</strong>, chọn <strong>Xóa tài khoản</strong></li>
+            <li>Nhập lại mật khẩu để xác nhận. Tài khoản bị xóa ngay lập tức.</li>
+        </ul>
+        <h3>Cách 2: Gửi yêu cầu qua email</h3>
+        <p>Dùng cách này khi bạn không còn vào được Ứng dụng. Gửi email đến <a href="mailto:tranhbeca2018@gmail.com?subject=Yeu%20cau%20xoa%20tai%20khoan">tranhbeca2018@gmail.com</a> với tiêu đề "Yêu cầu xóa tài khoản", ghi rõ email đã dùng để đăng ký. Chúng tôi xử lý trong vòng 7 ngày làm việc và phản hồi khi hoàn tất.</p>
+        <h3>Dữ liệu bị xóa</h3>
+        <ul>
+            <li>Tài khoản đăng nhập (email, mật khẩu), hồ sơ, thông tin nhận hàng đã lưu, tranh yêu thích và ảnh đại diện: bị xóa vĩnh viễn, không thể khôi phục</li>
+        </ul>
+        <h3>Dữ liệu được giữ lại</h3>
+        <ul>
+            <li>Các đơn hàng đã đặt: giữ lại như mô tả ở mục 7, vì lý do kế toán, thuế, bảo hành và khiếu nại</li>
+            <li>Bộ đếm lượt ghép ảnh AI theo ngày và các báo cáo ảnh AI bạn đã gửi: không chứa thông tin liên hệ, giữ theo thời hạn ở mục 7</li>
+            <li>Thông tin khách sỉ do cửa hàng quản lý (nếu có): xóa khi bạn gửi yêu cầu qua email theo Cách 2</li>
+        </ul>
+        <p>Nếu chỉ muốn xóa một phần dữ liệu (ví dụ: ảnh đại diện hoặc thông tin nhận hàng đã lưu) mà không xóa tài khoản, bạn có thể tự xóa hoặc thay trong Ứng dụng, hoặc gửi email cho chúng tôi.</p>
+    </section>
+
+    <section>
+        <h2><span class="num">9</span><span>Quyền của bạn</span></h2>
+        <p>Theo pháp luật về bảo vệ dữ liệu cá nhân, bạn có quyền:</p>
+        <ul>
+            <li>Được biết về việc xử lý dữ liệu và xem dữ liệu của mình</li>
+            <li>Yêu cầu chỉnh sửa dữ liệu không chính xác</li>
+            <li>Yêu cầu cung cấp bản sao dữ liệu của mình</li>
+            <li>Rút lại sự đồng ý, yêu cầu hạn chế xử lý, phản đối xử lý hoặc yêu cầu xóa dữ liệu</li>
+            <li>Khiếu nại đến cơ quan có thẩm quyền nếu cho rằng quyền của mình bị vi phạm</li>
+        </ul>
+        <p>Để thực hiện các quyền trên, hãy liên hệ chúng tôi theo mục 12. Chúng tôi phản hồi trong vòng 7 ngày làm việc.</p>
+    </section>
+
+    <section>
+        <h2><span class="num">10</span><span>Độ tuổi sử dụng</span></h2>
+        <p>Ứng dụng phục vụ việc mua bán sản phẩm, dành cho người dùng <strong>từ 18 tuổi trở lên</strong> và không dành cho trẻ em. Chúng tôi không cố ý thu thập dữ liệu của trẻ em. Nếu bạn là cha mẹ hoặc người giám hộ và biết trẻ đã cung cấp dữ liệu cho chúng tôi, hãy liên hệ để chúng tôi xóa.</p>
+    </section>
+
+    <section>
+        <h2><span class="num">11</span><span>Thay đổi chính sách</span></h2>
+        <p>Chúng tôi có thể cập nhật chính sách này khi Ứng dụng thay đổi tính năng hoặc khi pháp luật thay đổi. Ngày hiệu lực ở đầu trang sẽ được cập nhật. Với thay đổi quan trọng, chúng tôi sẽ thông báo trong Ứng dụng trước khi áp dụng.</p>
+    </section>
+
+    <section>
+        <h2><span class="num">12</span><span>Liên hệ</span></h2>
+        <p>Mọi câu hỏi hoặc yêu cầu về dữ liệu cá nhân, vui lòng liên hệ:</p>
+        <ul>
+            <li><strong>Nhà phát triển:</strong> Pink_developer</li>
             <li><strong>Ứng dụng:</strong> Tranh Bể Cá 3D</li>
             <li><strong>Email:</strong> <a href="mailto:tranhbeca2018@gmail.com">tranhbeca2018@gmail.com</a></li>
+            <li><strong>Hotline:</strong> <a href="tel:0944908880">0944 908 880</a></li>
+            <li><strong>Zalo:</strong> 0888 196 789</li>
         </ul>
     </section>
-
-    <p class="updated">Cập nhật lần cuối: 08/07/2026</p>
-</div>
+</main>
 
 <!-- ==================== ENGLISH ==================== -->
-<div id="content-en" class="container hidden">
+<main id="content-en" class="container hidden" lang="en">
+    <div class="hero">
+        <h1>Privacy Policy</h1>
+        <p>How the Tranh Bể Cá 3D app collects, uses, shares and protects your information.</p>
+        <span class="updated">Effective date: October 8, 2026</span>
+    </div>
+    <nav class="toc" aria-label="Contents">
+        <div class="toc-title">Contents</div>
+        <ol></ol>
+    </nav>
 
     <section>
-        <h2>1. Introduction</h2>
-        <p>Tranh Bể Cá 3D ("we", "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and protect your personal information when you use the Tranh Bể Cá 3D application ("App").</p>
-        <p>By using the App, you agree to the terms of this policy.</p>
+        <h2><span class="num">1</span><span>Introduction</span></h2>
+        <p>This policy applies to the <strong>Tranh Bể Cá 3D</strong> mobile app (application ID <strong>trung3d.apptranhbeca</strong>, the "App"), developed and operated by <strong>Pink_developer</strong> (the developer name on Google Play) for the Tranh Bể Cá 3D shop (together, "we", "us"). We are responsible for processing your personal data when you use the App.</p>
+        <p>This policy explains what data we collect, why we use it, who we share it with, how long we keep it and what rights you have. We process personal data in accordance with Vietnamese personal data protection law (Decree 13/2023/ND-CP) and the Google Play User Data policy.</p>
+        <p>By creating an account and using the App, you confirm that you have read and agree to this policy.</p>
     </section>
 
     <section>
-        <h2>2. Information We Collect</h2>
-        <p>We collect the following types of information:</p>
+        <h2><span class="num">2</span><span>Data We Collect</span></h2>
 
-        <p><strong>a) Account Information:</strong></p>
+        <h3>a) Account information (provided by you at sign-up)</h3>
         <ul>
-            <li>Email address (for registration and login)</li>
-            <li>Password (encrypted; we cannot read it)</li>
+            <li>Email address and display name</li>
+            <li>Password: stored by Firebase Authentication (Google) in one-way hashed form; we cannot see it</li>
+            <li>Profile photo: only if you choose one in the Profile tab</li>
         </ul>
 
-        <p><strong>b) Order Information:</strong></p>
+        <h3>b) Order information</h3>
         <ul>
-            <li>Recipient's full name</li>
-            <li>Phone number</li>
-            <li>Delivery address (house number, street, ward, city/province)</li>
-            <li>Order details: painting ID, dimensions, material, quantity, price</li>
+            <li>Recipient name, phone number and delivery address</li>
+            <li>Order details: painting ID, dimensions, printed sides, material, number of panels, price, order status and shipment tracking number</li>
+            <li>Your most recent delivery details are saved to your account to pre-fill your next order</li>
+            <li>Paintings you mark as favorites</li>
         </ul>
 
-        <p><strong>c) Images:</strong></p>
+        <h3>c) Images</h3>
         <ul>
-            <li>Photos from camera or photo library (when using the AI-powered tank preview feature)</li>
-            <li>Images are sent to an AI service to composite paintings onto your tank photo, and are not permanently stored on our servers</li>
+            <li><strong>Fish tank photos</strong> you take or pick when using "Preview on tank": sent to an AI service to composite the painting. The App does not keep this original photo.</li>
+            <li><strong>AI composited result images</strong>: shown only on your device and not uploaded to our servers. To keep one, you can save it to your phone's photo gallery.</li>
+            <li><strong>Profile photo</strong>: stored in your account if you choose one, visible only to you in the App</li>
+            <li><strong>AI image reports</strong>: if you tap "Report image", we store the reason you chose, the related design and the time of the report (not your tank photo or the composite)</li>
         </ul>
 
-        <p><strong>d) Technical Data:</strong></p>
+        <h3>d) Wholesale customer information</h3>
         <ul>
-            <li>Device information (operating system, app version)</li>
-            <li>Basic usage logs to improve our services</li>
+            <li>If you are a wholesale customer, the shop may also store your phone number, wholesale price, custom shipping fee and customer-care notes linked to your account email</li>
         </ul>
-    </section>
 
-    <section>
-        <h2>3. How We Use Your Information</h2>
-        <p>We use your information to:</p>
+        <h3>e) Technical data</h3>
         <ul>
-            <li>Create and manage your account</li>
-            <li>Process and deliver orders</li>
-            <li>Contact you about your orders (via phone or Zalo)</li>
-            <li>Provide AI-powered painting preview on your fish tank</li>
-            <li>Improve service quality and user experience</li>
+            <li>The App does <strong>not</strong> use behavioral analytics, does <strong>not</strong> show ads and does <strong>not</strong> collect the Advertising ID</li>
+            <li>When you connect, Google Firebase services may automatically process technical information such as IP address, device type and app integrity signals (Firebase App Check) to prevent unauthorized access</li>
+            <li>Your light/dark theme choice is stored only on your device</li>
         </ul>
-    </section>
 
-    <section>
-        <h2>4. Information Sharing</h2>
-        <p>We <strong>do not sell, rent, or trade</strong> your personal information to any third party for commercial purposes.</p>
-        <p>Your information is only shared in the following cases:</p>
+        <h3>Data we do not collect</h3>
         <ul>
-            <li><strong>Firebase Services (Google):</strong> Storage of account and order data</li>
-            <li><strong>AI Image Processing Service (OpenAI):</strong> Fish tank photos you upload are sent to OpenAI to composite the painting onto your photo, used solely for that processing request and not permanently retained</li>
-            <li><strong>Order Notifications:</strong> Order information is sent to our internal management system (Zalo OA) for order processing</li>
-            <li><strong>Legal Requirements:</strong> When required by competent authorities under applicable law</li>
-        </ul>
-    </section>
-
-    <section>
-        <h2>5. Data Security</h2>
-        <p>We implement security measures to protect your information:</p>
-        <ul>
-            <li>User authentication via Firebase Authentication</li>
-            <li>Passwords are encrypted before storage</li>
-            <li>Data connections use HTTPS/SSL protocol</li>
-            <li>Firebase App Check to prevent unauthorized access</li>
-            <li>Database access rules to limit read/write permissions</li>
+            <li>Location, contacts, messages or call logs</li>
+            <li>Bank card or e-wallet details: the App does not process online payments</li>
         </ul>
     </section>
 
     <section>
-        <h2>6. Device Permissions</h2>
-        <p>The App may request the following permissions on your device:</p>
+        <h2><span class="num">3</span><span>How We Use Your Data</span></h2>
         <ul>
-            <li><strong>Camera:</strong> Take photos of your actual fish tank to use the AI-powered painting preview feature</li>
-            <li><strong>Photo Library:</strong> Select tank photos from your device for painting preview</li>
-            <li><strong>Internet:</strong> Connect to servers to load data, process AI images, and handle orders</li>
+            <li>Create, sign in to and manage your account</li>
+            <li>Calculate prices by tank size, and record, produce and deliver orders</li>
+            <li>Contact you about orders by phone or Zalo, and show order status and tracking numbers in the App</li>
+            <li>Provide the AI tank preview feature and handle reports about AI images</li>
+            <li>Apply wholesale pricing and serve wholesale customers</li>
+            <li>Protect the App against unauthorized access and abuse (for example, a daily limit on AI previews)</li>
+            <li>Meet legal obligations for accounting, tax, warranty and dispute resolution</li>
         </ul>
-        <p>You can deny any permission at any time in your device settings. Some features will not be available if the corresponding permission is denied.</p>
+        <p>We do not use your data for advertising, and we do not make automated decisions that have legal effects on you.</p>
     </section>
 
     <section>
-        <h2>7. Data Retention</h2>
+        <h2><span class="num">4</span><span>Data Sharing</span></h2>
+        <p>We <strong>do not sell, rent or trade</strong> your personal data. Data is shared only with the parties below, and only as needed:</p>
         <ul>
-            <li>Account information: stored until you request account deletion</li>
-            <li>Order information: stored for warranty and after-sales support purposes</li>
-            <li>Uploaded images: only processed temporarily, not permanently stored</li>
+            <li><strong>Google Firebase</strong> (Authentication, Realtime Database, Cloud Firestore, Cloud Storage, Cloud Functions, App Check): infrastructure that stores and processes accounts, orders and images.</li>
+            <li><strong>OpenAI</strong>: receives your tank photo and the painting design to produce the composite when you use "Preview on tank". Images are used only for that request and are handled by OpenAI under its API data policy.</li>
+            <li><strong>Zalo (VNG Corporation)</strong>: when an order is placed or cancelled, the order details (name, phone number, address, painting details and design image) are sent through a Zalo Official Account to the shop's internal Zalo account for processing</li>
+            <li><strong>Shipping carriers</strong> (e.g. GHN, GHTK, Viettel Post): receive your name, phone number and delivery address to deliver your order</li>
+            <li><strong>Competent authorities</strong>: when required by law</li>
         </ul>
-        <p>When you delete your account from the Profile section of the app: your email, password, and account profile are permanently deleted immediately and cannot be recovered. Previously placed order information (recipient name, phone number, address, order details) is retained for accounting, warranty, and dispute-resolution purposes as required, and is no longer linked to any login account of yours.</p>
+        <p>External services such as OpenAI and Firebase may process data on servers outside Vietnam. We only transfer the data each feature needs.</p>
     </section>
 
     <section>
-        <h2>8. Your Rights</h2>
-        <p>You have the right to:</p>
+        <h2><span class="num">5</span><span>Data Security</span></h2>
         <ul>
-            <li>Access and view your personal information</li>
-            <li>Request correction of inaccurate information</li>
-            <li>Request deletion of your account and personal data</li>
-            <li>Withdraw consent for data processing</li>
+            <li>All data between the App and our servers is encrypted in transit over HTTPS (TLS)</li>
+            <li>Sign-in uses Firebase Authentication. Passwords are never stored in readable form.</li>
+            <li>Database access rules ensure each customer can only read their own data. Only the shop's admin account can view orders to process them.</li>
+            <li>Firebase App Check helps limit requests that do not come from the official App</li>
+            <li>A daily limit on AI previews to prevent abuse</li>
         </ul>
-        <p>To exercise these rights, please contact us via the information in Section 10.</p>
+        <p>No system is completely secure. If a data breach affects you, we will notify you and respond as required by law.</p>
     </section>
 
     <section>
-        <h2>9. Policy Changes</h2>
-        <p>We may update this Privacy Policy from time to time. Any changes will be notified through the App or this page. Continued use of the App after updates constitutes acceptance of the new policy.</p>
-    </section>
-
-    <section>
-        <h2>10. Contact Us</h2>
-        <p>If you have any questions or requests regarding this Privacy Policy, please contact us:</p>
+        <h2><span class="num">6</span><span>Device Permissions</span></h2>
         <ul>
-            <li><strong>Application:</strong> Tranh Bể Cá 3D</li>
+            <li><strong>Camera</strong>: take a photo of your fish tank for the AI preview. Used only when you tap "Take photo".</li>
+            <li><strong>Photos</strong>: pick a tank photo or profile photo through the system photo picker. The App only receives the photo you select.</li>
+            <li><strong>Save to device</strong> (Android 9 and below): save an AI composite to your gallery when you tap save</li>
+            <li><strong>Internet</strong>: load designs, process AI images and send orders</li>
+        </ul>
+        <p>You can revoke permissions at any time in your device Settings. The related feature will then be unavailable.</p>
+    </section>
+
+    <section>
+        <h2><span class="num">7</span><span>Data Retention</span></h2>
+        <ul>
+            <li><strong>Account, profile photo, saved delivery details and favorites</strong>: kept until you delete your account</li>
+            <li><strong>Original tank photos and AI composited images</strong>: not stored on our servers</li>
+            <li><strong>Daily AI preview count</strong>: just a counter used to enforce the limit of 3 per day, containing no personal information</li>
+            <li><strong>AI image reports</strong>: kept so the shop can review them and improve quality; you can request deletion by email</li>
+            <li><strong>Wholesale customer information</strong> managed by the shop: kept for the duration of the business relationship; you can request deletion by email</li>
+            <li><strong>Placed orders</strong> (name, phone number, address, order details): kept for the period required by accounting and tax law, and for warranty and dispute resolution, including after you delete your account. They are then no longer linked to any login account.</li>
+            <li><strong>Order notification messages</strong> in the shop's Zalo: kept for the same period as orders</li>
+        </ul>
+    </section>
+
+    <section id="delete-account" class="highlight">
+        <h2><span class="num">8</span><span>How to Delete Your Account and Data</span></h2>
+        <h3>Option 1: In the App</h3>
+        <ul>
+            <li>Open Tranh Bể Cá 3D and sign in</li>
+            <li>Go to the <strong>Profile</strong> tab (Cá nhân), scroll to <strong>Settings</strong> (Cài đặt) and tap <strong>Delete account</strong> (Xóa tài khoản)</li>
+            <li>Re-enter your password to confirm. Your account is deleted immediately.</li>
+        </ul>
+        <h3>Option 2: Request by email</h3>
+        <p>Use this if you can no longer access the App. Email <a href="mailto:tranhbeca2018@gmail.com?subject=Account%20deletion%20request">tranhbeca2018@gmail.com</a> with the subject "Account deletion request" and the email address you registered with. We process requests within 7 business days and reply when done.</p>
+        <h3>Data that is deleted</h3>
+        <ul>
+            <li>Your login account (email, password), profile, saved delivery details, favorites and profile photo: permanently deleted and cannot be recovered</li>
+        </ul>
+        <h3>Data that is retained</h3>
+        <ul>
+            <li>Placed orders: retained as described in Section 7, for accounting, tax, warranty and dispute purposes</li>
+            <li>The daily AI preview counter and any AI image reports you sent: contain no contact details, kept for the periods in Section 7</li>
+            <li>Wholesale customer information managed by the shop (if any): deleted when you request it by email (Option 2)</li>
+        </ul>
+        <p>To delete only some data (for example, your profile photo or saved delivery details) without deleting your account, you can remove or replace it in the App, or email us.</p>
+    </section>
+
+    <section>
+        <h2><span class="num">9</span><span>Your Rights</span></h2>
+        <p>Under personal data protection law, you have the right to:</p>
+        <ul>
+            <li>Be informed about processing and access your data</li>
+            <li>Correct inaccurate data</li>
+            <li>Obtain a copy of your data</li>
+            <li>Withdraw consent, restrict or object to processing, or request deletion</li>
+            <li>Lodge a complaint with the competent authority if you believe your rights have been violated</li>
+        </ul>
+        <p>To exercise these rights, contact us as described in Section 12. We respond within 7 business days.</p>
+    </section>
+
+    <section>
+        <h2><span class="num">10</span><span>Age Requirement</span></h2>
+        <p>The App is for buying products, is intended for users <strong>aged 18 and over</strong> and is not directed at children. We do not knowingly collect data from children. If you are a parent or guardian and believe a child has given us data, please contact us and we will delete it.</p>
+    </section>
+
+    <section>
+        <h2><span class="num">11</span><span>Changes to This Policy</span></h2>
+        <p>We may update this policy when the App's features or the law change. The effective date at the top of this page will be updated. For significant changes, we will notify you in the App before they take effect.</p>
+    </section>
+
+    <section>
+        <h2><span class="num">12</span><span>Contact Us</span></h2>
+        <p>For any questions or requests about your personal data, please contact:</p>
+        <ul>
+            <li><strong>Developer:</strong> Pink_developer</li>
+            <li><strong>App:</strong> Tranh Bể Cá 3D</li>
             <li><strong>Email:</strong> <a href="mailto:tranhbeca2018@gmail.com">tranhbeca2018@gmail.com</a></li>
+            <li><strong>Hotline:</strong> <a href="tel:+84944908880">+84 944 908 880</a></li>
+            <li><strong>Zalo:</strong> +84 888 196 789</li>
         </ul>
     </section>
-
-    <p class="updated">Last updated: July 8, 2026</p>
-</div>
+</main>
 
 <footer>
     &copy; 2026 Tranh Bể Cá 3D. All rights reserved.
 </footer>
 
 <script>
+    var TITLES = {
+        vi: 'Chính sách bảo mật - Tranh Bể Cá 3D',
+        en: 'Privacy Policy - Tranh Bể Cá 3D'
+    };
+
+    // Mục lục tự sinh từ tiêu đề các mục.
+    ['vi', 'en'].forEach(function (lang) {
+        var root = document.getElementById('content-' + lang);
+        var list = root.querySelector('.toc ol');
+        root.querySelectorAll('section').forEach(function (sec, i) {
+            if (!sec.id) sec.id = lang + '-' + (i + 1);
+            var li = document.createElement('li');
+            var a = document.createElement('a');
+            a.href = '#' + sec.id;
+            a.textContent = sec.querySelector('h2 span:last-child').textContent;
+            li.appendChild(a);
+            list.appendChild(li);
+        });
+    });
+
     function switchLang(lang) {
         document.getElementById('content-vi').classList.toggle('hidden', lang !== 'vi');
         document.getElementById('content-en').classList.toggle('hidden', lang !== 'en');
-        document.getElementById('page-title').textContent =
-            lang === 'vi' ? 'Chính Sách Bảo Mật' : 'Privacy Policy';
-        document.querySelectorAll('.lang-btn').forEach(function(btn) {
-            btn.classList.remove('active');
+        document.documentElement.lang = lang;
+        document.title = TITLES[lang];
+        document.querySelectorAll('.lang-btn').forEach(function (btn) {
+            btn.classList.toggle('active', btn.getAttribute('data-lang') === lang);
         });
-        event.target.classList.add('active');
     }
+
+    // Link có #delete-account (tiếng Anh) hoặc #xoa-tai-khoan mở đúng ngôn ngữ.
+    // ?lang=en mở bản tiếng Anh.
+    function syncFromHash() {
+        var target = location.hash && document.getElementById(location.hash.slice(1));
+        if (!target) return;
+        var main = target.closest('main');
+        if (main) switchLang(main.id === 'content-en' ? 'en' : 'vi');
+        target.scrollIntoView();
+    }
+    if (/[?&]lang=en\b/.test(location.search)) switchLang('en');
+    window.addEventListener('hashchange', syncFromHash);
+    syncFromHash();
 </script>
 
 </body>

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>963357026859-6h4ifbl4pjh7f42got3q8qa8c7jmnddb.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.963357026859-6h4ifbl4pjh7f42got3q8qa8c7jmnddb</string>
+	<key>API_KEY</key>
+	<string>AIzaSyBfRduYzPZqeWKh2-wheJQmBZ1dYvO--Pc</string>
+	<key>GCM_SENDER_ID</key>
+	<string>963357026859</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>trung3d.apptranhbeca</string>
+	<key>PROJECT_ID</key>
+	<string>apptranhbeca</string>
+	<key>STORAGE_BUCKET</key>
+	<string>apptranhbeca.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:963357026859:ios:cb28e74c71fcfe338a586e</string>
+	<key>DATABASE_URL</key>
+	<string>https://apptranhbeca-default-rtdb.asia-southeast1.firebasedatabase.app</string>
+</dict>
+</plist>

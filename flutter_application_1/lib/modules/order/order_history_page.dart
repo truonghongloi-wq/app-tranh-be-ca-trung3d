@@ -1,9 +1,12 @@
+import '../../widgets/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../services/order_notification_service.dart';
 import 'cart_checkout_page.dart';
 import 'order_store.dart';
+import 'order_widgets.dart';
+import '../../widgets/app_ui.dart';
 
 // TODO: Điền link hướng dẫn dán tranh thực tế vào đây
 const _kDanTrongUrl = 'https://youtu.be/HPMifAo5sWI';
@@ -17,7 +20,7 @@ class OrderHistoryPage extends StatefulWidget {
 }
 
 class _OrderHistoryPageState extends State<OrderHistoryPage> {
-  static const Color _primary = Color(0xFF2B678B);
+  static const Color _primary = Color(0xFF2563EB);
 
   List<OrderRecord> _myOrders = <OrderRecord>[];
   bool _loading = true;
@@ -73,17 +76,17 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
 
   Future<void> _launchUrl(BuildContext context, String url) async {
     if (url.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Link đang được cập nhật')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Link đang được cập nhật')));
       return;
     }
     final uri = Uri.parse(url);
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Không mở được link')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Không mở được link')));
       }
     }
   }
@@ -93,14 +96,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
     final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: const Text(
-          'Giỏ hàng & Đơn đã đặt',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: _primary,
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
+      appBar: appSubAppBar(context, 'Giỏ hàng & Đơn đã đặt'),
       body: ValueListenableBuilder<List<CartItem>>(
         valueListenable: OrderStore.cartItems,
         builder: (context, cartItems, _) {
@@ -119,16 +115,19 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                 padding: const EdgeInsets.all(24),
                 children: [
                   const SizedBox(height: 120),
-                  Icon(Icons.shopping_cart_outlined,
-                      size: 64,
-                      color: emptyDark ? Colors.white24 : Colors.black26),
+                  Icon(
+                    PhosphorIconsRegular.shoppingCart,
+                    size: 64,
+                    color: emptyDark ? Colors.white24 : Colors.black26,
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     _error ?? 'Giỏ hàng trống\nChưa có đơn hàng nào.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                        fontSize: 15,
-                        color: emptyDark ? Colors.white38 : Colors.black45),
+                      fontSize: 15,
+                      color: emptyDark ? Colors.white38 : Colors.black45,
+                    ),
                   ),
                 ],
               ),
@@ -143,7 +142,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                 // ── Giỏ hàng ──
                 if (cartItems.isNotEmpty) ...[
                   _SectionHeader(
-                    icon: Icons.shopping_cart_outlined,
+                    icon: PhosphorIconsRegular.shoppingCart,
                     title: 'Giỏ hàng',
                     badge: '${cartItems.length}',
                   ),
@@ -170,15 +169,17 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                 // ── Đơn đã đặt ──
                 if (orders.isNotEmpty) ...[
                   _SectionHeader(
-                    icon: Icons.receipt_long_outlined,
+                    icon: PhosphorIconsRegular.receipt,
                     title: 'Đơn đã đặt',
                     badge: '${orders.length}',
                   ),
                   const SizedBox(height: 10),
-                  ...orders.map((order) => Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: _buildOrderCard(context, order),
-                      )),
+                  ...orders.map(
+                    (order) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _buildOrderCard(context, order),
+                    ),
+                  ),
                 ],
               ],
             ),
@@ -204,16 +205,18 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
               Text(
                 'Tổng giỏ hàng (${items.length} sản phẩm)',
                 style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1B3A4B)),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.ink,
+                ),
               ),
               Text(
                 '${_formatCurrency(total)} đ',
                 style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: _primary),
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: _primary,
+                ),
               ),
             ],
           ),
@@ -221,10 +224,11 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
         const SizedBox(height: 10),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.green.shade600,
+            backgroundColor: AppColors.blue,
             minimumSize: const Size(double.infinity, 50),
             shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14)),
+              borderRadius: BorderRadius.circular(14),
+            ),
             elevation: 2,
           ),
           onPressed: () {
@@ -238,16 +242,20 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
           child: const Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.shopping_bag_outlined,
-                  color: Colors.white, size: 20),
+              Icon(
+                PhosphorIconsRegular.shoppingBag,
+                color: Colors.white,
+                size: 20,
+              ),
               SizedBox(width: 8),
               Text(
                 'THANH TOÁN GIỎ HÀNG',
                 style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5),
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
               ),
             ],
           ),
@@ -264,16 +272,14 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
       decoration: BoxDecoration(
         color: theme.cardColor,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 6),
-        ],
+        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 6)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.receipt_long, color: _primary),
+              const Icon(PhosphorIconsRegular.receipt, color: _primary),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -285,19 +291,30 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                   ),
                 ),
               ),
+              OrderStatusChip(order.status),
             ],
           ),
           const SizedBox(height: 8),
-          Text('Thời gian: ${_formatDate(order.createdAt)}',
-              style: TextStyle(color: isDark ? Colors.white70 : null)),
-          Text('Khách: ${order.customerName}',
-              style: TextStyle(color: isDark ? Colors.white70 : null)),
-          Text('SĐT: ${order.customerPhone}',
-              style: TextStyle(color: isDark ? Colors.white70 : null)),
-          Text('Địa chỉ: ${order.customerAddress}',
-              style: TextStyle(color: isDark ? Colors.white70 : null)),
-          Text('Số tấm: ${order.tongSoTam}',
-              style: TextStyle(color: isDark ? Colors.white70 : null)),
+          Text(
+            'Thời gian: ${_formatDate(order.createdAt)}',
+            style: TextStyle(color: isDark ? Colors.white70 : null),
+          ),
+          Text(
+            'Khách: ${order.customerName}',
+            style: TextStyle(color: isDark ? Colors.white70 : null),
+          ),
+          Text(
+            'SĐT: ${order.customerPhone}',
+            style: TextStyle(color: isDark ? Colors.white70 : null),
+          ),
+          Text(
+            'Địa chỉ: ${order.customerAddress}',
+            style: TextStyle(color: isDark ? Colors.white70 : null),
+          ),
+          Text(
+            'Số tấm: ${order.tongSoTam}',
+            style: TextStyle(color: isDark ? Colors.white70 : null),
+          ),
           ...order.cacMatIn.map(
             (mat) => Text(
               'Tranh mặt $mat: ${_paintingSize(order.kichThuoc, mat)} cm (${order.chatLieuPerMat[mat] ?? order.chatLieu})',
@@ -336,7 +353,11 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.play_circle_outline, size: 16, color: _primary),
+                  Icon(
+                    PhosphorIconsRegular.playCircle,
+                    size: 16,
+                    color: _primary,
+                  ),
                   SizedBox(width: 4),
                   Flexible(
                     child: Text(
@@ -369,7 +390,11 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.play_circle_outline, size: 16, color: _primary),
+                  Icon(
+                    PhosphorIconsRegular.playCircle,
+                    size: 16,
+                    color: _primary,
+                  ),
                   SizedBox(width: 4),
                   Flexible(
                     child: Text(
@@ -420,7 +445,11 @@ class _CartItemCard extends StatelessWidget {
         color: theme.cardColor,
         borderRadius: BorderRadius.circular(14),
         boxShadow: const [
-          BoxShadow(color: Color(0x0F000000), blurRadius: 8, offset: Offset(0, 3)),
+          BoxShadow(
+            color: Color(0x122563EB),
+            blurRadius: 8,
+            offset: Offset(0, 3),
+          ),
         ],
       ),
       child: Row(
@@ -448,20 +477,26 @@ class _CartItemCard extends StatelessWidget {
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
-                    color: isDark ? Colors.white : const Color(0xFF1B3A4B),
+                    color: isDark ? Colors.white : AppColors.ink,
                   ),
                 ),
                 const SizedBox(height: 4),
-                ...item.cacMatIn.map((mat) => Text(
-                      'Mặt $mat: ${paintingSize(item.kichThuoc, mat)} cm'
-                      ' (${item.chatLieuPerMat[mat] ?? item.chatLieu})',
-                      style: TextStyle(
-                          fontSize: 12, color: isDark ? Colors.white54 : Colors.black54),
-                    )),
+                ...item.cacMatIn.map(
+                  (mat) => Text(
+                    'Mặt $mat: ${paintingSize(item.kichThuoc, mat)} cm'
+                    ' (${item.chatLieuPerMat[mat] ?? item.chatLieu})',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark ? Colors.white54 : Colors.black54,
+                    ),
+                  ),
+                ),
                 Text(
                   '${item.tongSoTam} tấm',
                   style: TextStyle(
-                      fontSize: 12, color: isDark ? Colors.white38 : Colors.black38),
+                    fontSize: 12,
+                    color: isDark ? Colors.white38 : Colors.black38,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -469,15 +504,18 @@ class _CartItemCard extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF2B678B),
+                    color: Color(0xFF2563EB),
                   ),
                 ),
               ],
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.delete_outline_rounded,
-                color: Colors.red, size: 22),
+            icon: const Icon(
+              PhosphorIconsRegular.trash,
+              color: Colors.red,
+              size: 22,
+            ),
             tooltip: 'Xóa khỏi giỏ',
             onPressed: () {
               onRemove();
@@ -499,12 +537,12 @@ class _CartItemCard extends StatelessWidget {
     return Container(
       width: 72,
       height: 72,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF5CC1FF), Color(0xFF2B678B)],
-        ),
+      color: const Color(0xFFEFF6FF),
+      child: const Icon(
+        PhosphorIconsRegular.image,
+        color: Color(0x992563EB),
+        size: 28,
       ),
-      child: const Icon(Icons.image, color: Colors.white38, size: 28),
     );
   }
 }
@@ -532,10 +570,10 @@ class _SectionHeader extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(7),
           decoration: BoxDecoration(
-            color: const Color(0xFF2B678B).withValues(alpha: 0.1),
+            color: const Color(0xFF2563EB).withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(9),
           ),
-          child: Icon(icon, color: const Color(0xFF2B678B), size: 18),
+          child: Icon(icon, color: const Color(0xFF2563EB), size: 18),
         ),
         const SizedBox(width: 10),
         Text(
@@ -543,22 +581,23 @@ class _SectionHeader extends StatelessWidget {
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: isDark ? Colors.white : const Color(0xFF1B3A4B),
+            color: isDark ? Colors.white : AppColors.ink,
           ),
         ),
         const SizedBox(width: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           decoration: BoxDecoration(
-            color: const Color(0xFF2B678B),
+            color: const Color(0xFF2563EB),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
             badge,
             style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.bold),
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
       ],

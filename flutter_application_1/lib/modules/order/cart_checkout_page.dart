@@ -1,10 +1,15 @@
 import 'package:cloud_functions/cloud_functions.dart';
+import '../../widgets/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../app_globals.dart';
 import '../../services/order_notification_service.dart';
 import 'order_store.dart';
+import '../../widgets/app_ui.dart';
+import '../../widgets/install_guide.dart';
+import '../../services/shipping_info_service.dart';
+import '../../widgets/address_picker.dart';
 
 class CartCheckoutPage extends StatefulWidget {
   final List<CartItem> items;
@@ -16,8 +21,7 @@ class CartCheckoutPage extends StatefulWidget {
 }
 
 class _CartCheckoutPageState extends State<CartCheckoutPage> {
-  static const Color _primary = Color(0xFF2B678B);
-  static const Color _gradientTop = Color(0xFF5CC1FF);
+  static const Color _primary = Color(0xFF2563EB);
 
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _nameCtrl = TextEditingController();
@@ -30,6 +34,21 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
 
   String get _fullAddress =>
       '${_soNhaCtrl.text.trim()}, ${_duongCtrl.text.trim()}, ${_phuongXaCtrl.text.trim()}, ${_tinhTPCtrl.text.trim()}';
+
+  List<TextEditingController> get _shippingCtrls => [
+    _nameCtrl,
+    _phoneCtrl,
+    _soNhaCtrl,
+    _duongCtrl,
+    _phuongXaCtrl,
+    _tinhTPCtrl,
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    ShippingInfoService.fillInto(_shippingCtrls);
+  }
 
   @override
   void dispose() {
@@ -44,9 +63,9 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
 
   String _formatCurrency(double amount) {
     return amount.toInt().toString().replaceAllMapped(
-          RegExp(r'\B(?=(\d{3})+(?!\d))'),
-          (m) => '.',
-        );
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (m) => '.',
+    );
   }
 
   // Giảm giá thêm ở cấp giỏ hàng khi có 2+ tranh
@@ -87,7 +106,6 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
     final address = _fullAddress;
     final now = DateTime.now();
 
-    final results = <String>[];
     // Giỏ có 2+ sản phẩm: gắn chung 1 groupId để Cloud Function KHÔNG tự gửi
     // Zalo riêng lẻ từng đơn, sau đó gọi notify_order_group gộp thành 1 tin.
     final groupId = widget.items.length > 1
@@ -95,53 +113,36 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
         : null;
 
     try {
-      for (final item in widget.items) {
-        final extraDiscount = _extraDiscountForItem(item);
-        final record = OrderRecord(
-          imageId: item.imageId,
-          imageUrl: item.imageUrl,
-          tongDienTich: item.tongDienTich,
-          tongTien: item.tongTien - extraDiscount,
-          discountTien: item.discountTien + extraDiscount,
-          tongSoTam: item.tongSoTam,
-          kichThuoc: item.kichThuoc,
-          cacMatIn: item.cacMatIn,
-          chatLieu: item.chatLieu,
-          chatLieuPerMat: item.chatLieuPerMat,
-          customerName: name,
-          customerPhone: phone,
-          customerAddress: address,
-          createdAt: now,
-          groupId: groupId,
-        );
-        OrderStore.addOrder(record);
-        final orderId = await OrderNotificationService.submitOrder(record);
-        results.add(orderId);
-      }
+      final records = [
+        for (final item in widget.items)
+          OrderRecord(
+            imageId: item.imageId,
+            imageUrl: item.imageUrl,
+            tongDienTich: item.tongDienTich,
+            tongTien: item.tongTien - _extraDiscountForItem(item),
+            discountTien: item.discountTien + _extraDiscountForItem(item),
+            tongSoTam: item.tongSoTam,
+            kichThuoc: item.kichThuoc,
+            cacMatIn: item.cacMatIn,
+            chatLieu: item.chatLieu,
+            chatLieuPerMat: item.chatLieuPerMat,
+            customerName: name,
+            customerPhone: phone,
+            customerAddress: address,
+            createdAt: now,
+            groupId: groupId,
+          ),
+      ];
+      // Lưu cả giỏ trong 1 lệnh: hoặc lưu hết, hoặc không đơn nào.
+      final orderIds = await OrderNotificationService.submitOrders(records);
+      records.forEach(OrderStore.addOrder);
 
       if (groupId != null) {
         try {
-          final callable = FirebaseFunctions.instanceFor(region: 'asia-southeast1')
-              .httpsCallable('notify_order_group');
-          await callable.call({
-            'customerName': name,
-            'customerPhone': phone,
-            'customerAddress': address,
-            'items': widget.items.asMap().entries.map((entry) {
-              final item = entry.value;
-              final extraDiscount = _extraDiscountForItem(item);
-              return {
-                'imageId': item.imageId,
-                'imageUrl': item.imageUrl,
-                'kichThuoc': item.kichThuoc,
-                'cacMatIn': item.cacMatIn,
-                'chatLieu': item.chatLieu,
-                'chatLieuPerMat': item.chatLieuPerMat,
-                'tongTien': item.tongTien - extraDiscount,
-              };
-            }).toList(),
-            'tongTien': _cartTotal,
-          });
+          // Server tự đọc nội dung từ các đơn vừa lưu để soạn tin Zalo gộp.
+          await FirebaseFunctions.instanceFor(
+            region: 'asia-southeast1',
+          ).httpsCallable('notify_order_group').call({'orderIds': orderIds});
         } catch (e) {
           // Không chặn luồng đặt hàng nếu gửi thông báo gộp thất bại —
           // đơn đã lưu server rồi, chỉ mất thông báo Zalo.
@@ -149,6 +150,7 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
         }
       }
 
+      ShippingInfoService.save(_shippingCtrls);
       OrderStore.clearCart();
 
       if (!mounted) return;
@@ -156,7 +158,7 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
         MaterialPageRoute(
           builder: (_) => _CartInvoicePage(
             items: widget.items,
-            orderIds: results,
+            finalPrices: [for (final r in records) r.tongTien],
             customerName: name,
             customerPhone: phone,
             customerAddress: address,
@@ -168,7 +170,11 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Gửi đơn thất bại: $e'),
+          content: Text(
+            e is StateError
+                ? e.message
+                : 'Gửi đơn thất bại, vui lòng thử lại.',
+          ),
           behavior: SnackBarBehavior.floating,
           backgroundColor: Colors.red.shade700,
         ),
@@ -185,36 +191,7 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
       backgroundColor: theme.scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
-          SliverAppBar(
-            expandedHeight: 70,
-            floating: true,
-            pinned: true,
-            elevation: 0,
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-              onPressed: () => Navigator.pop(context),
-            ),
-            flexibleSpace: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [_gradientTop, _primary],
-                ),
-              ),
-              child: FlexibleSpaceBar(
-                titlePadding: const EdgeInsets.only(left: 56, bottom: 14),
-                title: Text(
-                  'Thanh toán giỏ hàng (${widget.items.length} sản phẩm)',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
-                ),
-              ),
-            ),
-          ),
+          AppSubHeader(title: 'Thanh toán (${widget.items.length} sản phẩm)'),
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
@@ -250,8 +227,11 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
                   color: _primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(9),
                 ),
-                child: const Icon(Icons.shopping_cart_outlined,
-                    color: _primary, size: 16),
+                child: const Icon(
+                  PhosphorIconsRegular.shoppingCart,
+                  color: _primary,
+                  size: 16,
+                ),
               ),
               const SizedBox(width: 10),
               Text(
@@ -260,7 +240,8 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
                   color: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.white : const Color(0xFF1B3A4B),
+                      ? Colors.white
+                      : AppColors.ink,
                 ),
               ),
             ],
@@ -282,8 +263,8 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
     final discountLabel = hasCartDiscount
         ? (chieuDai <= 90 ? 'Giảm 5%' : 'Giảm 10%')
         : (item.discountTien > 0
-            ? (chieuDai <= 90 ? 'Giảm 5%' : 'Giảm 10%')
-            : null);
+              ? (chieuDai <= 90 ? 'Giảm 5%' : 'Giảm 10%')
+              : null);
     final effectiveTongTien = item.tongTien - extraDiscount;
 
     final cardTheme = Theme.of(context);
@@ -295,7 +276,11 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
         color: cardTheme.cardColor,
         borderRadius: BorderRadius.circular(14),
         boxShadow: const [
-          BoxShadow(color: Color(0x0F000000), blurRadius: 8, offset: Offset(0, 3)),
+          BoxShadow(
+            color: Color(0x122563EB),
+            blurRadius: 8,
+            offset: Offset(0, 3),
+          ),
         ],
       ),
       child: Row(
@@ -326,40 +311,51 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
-                          color: cardDark ? Colors.white : const Color(0xFF1B3A4B),
+                          color: cardDark ? Colors.white : AppColors.ink,
                         ),
                       ),
                     ),
                     if (discountLabel != null)
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 7, vertical: 3),
+                          horizontal: 7,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
-                          color: Colors.orange.shade50,
+                          color: const Color(0xFFEFF6FF),
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
-                              color: Colors.orange.shade300, width: 1),
+                            color: const Color(0xFFBFDBFE),
+                            width: 1,
+                          ),
                         ),
                         child: Text(
                           discountLabel,
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
-                            color: Colors.orange.shade700,
+                            color: const Color(0xFF1D4ED8),
                           ),
                         ),
                       ),
                   ],
                 ),
                 const SizedBox(height: 4),
-                ...item.cacMatIn.map((mat) => Text(
-                      'Mặt $mat: ${_getSize(item, mat)} cm',
-                      style: TextStyle(
-                          fontSize: 12, color: cardDark ? Colors.white54 : Colors.black54),
-                    )),
+                ...item.cacMatIn.map(
+                  (mat) => Text(
+                    'Mặt $mat: ${_getSize(item, mat)} cm',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: cardDark ? Colors.white54 : Colors.black54,
+                    ),
+                  ),
+                ),
                 Text(
                   '${item.tongSoTam} tấm · ${item.chatLieu}',
-                  style: TextStyle(fontSize: 12, color: cardDark ? Colors.white38 : Colors.black45),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: cardDark ? Colors.white38 : Colors.black45,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -376,7 +372,7 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: const Color(0xFF2B678B).withValues(alpha: 0.08),
+              color: const Color(0xFF2563EB).withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
@@ -397,12 +393,12 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
     return Container(
       width: 70,
       height: 70,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF5CC1FF), Color(0xFF2B678B)],
-        ),
+      color: const Color(0xFFEFF6FF),
+      child: const Icon(
+        PhosphorIconsRegular.image,
+        color: Color(0x992563EB),
+        size: 28,
       ),
-      child: const Icon(Icons.image, color: Colors.white38, size: 28),
     );
   }
 
@@ -415,7 +411,11 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
         color: formTheme.cardColor,
         borderRadius: BorderRadius.circular(18),
         boxShadow: const [
-          BoxShadow(color: Color(0x0F000000), blurRadius: 10, offset: Offset(0, 3)),
+          BoxShadow(
+            color: Color(0x122563EB),
+            blurRadius: 10,
+            offset: Offset(0, 3),
+          ),
         ],
       ),
       child: Column(
@@ -429,8 +429,11 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
                   color: _primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(9),
                 ),
-                child: const Icon(Icons.local_shipping_rounded,
-                    color: _primary, size: 16),
+                child: const Icon(
+                  PhosphorIconsRegular.truck,
+                  color: _primary,
+                  size: 16,
+                ),
               ),
               const SizedBox(width: 10),
               Text(
@@ -438,7 +441,7 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
-                  color: formDark ? Colors.white : const Color(0xFF1B3A4B),
+                  color: formDark ? Colors.white : AppColors.ink,
                 ),
               ),
             ],
@@ -446,7 +449,10 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
           const SizedBox(height: 4),
           Text(
             'Nhập một lần cho tất cả sản phẩm',
-            style: TextStyle(fontSize: 12, color: formDark ? Colors.white38 : Colors.black38),
+            style: TextStyle(
+              fontSize: 12,
+              color: formDark ? Colors.white38 : Colors.black38,
+            ),
           ),
           const SizedBox(height: 16),
           Form(
@@ -456,7 +462,7 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
                 _StyledField(
                   controller: _nameCtrl,
                   label: 'Tên người nhận',
-                  icon: Icons.person_outline_rounded,
+                  icon: PhosphorIconsRegular.user,
                   validator: (v) => (v == null || v.trim().isEmpty)
                       ? 'Vui lòng nhập tên người nhận'
                       : null,
@@ -465,12 +471,14 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
                 _StyledField(
                   controller: _phoneCtrl,
                   label: 'Số điện thoại',
-                  icon: Icons.phone_outlined,
+                  icon: PhosphorIconsRegular.phone,
                   hint: 'Nhập đủ 10 số',
                   keyboardType: TextInputType.phone,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   validator: (v) {
-                    if (v == null || v.isEmpty) return 'Vui lòng nhập số điện thoại';
+                    if (v == null || v.isEmpty) {
+                      return 'Vui lòng nhập số điện thoại';
+                    }
                     if (!RegExp(r'^[0-9]{10}$').hasMatch(v)) {
                       return 'Số điện thoại phải đúng 10 chữ số';
                     }
@@ -481,34 +489,21 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
                 _StyledField(
                   controller: _soNhaCtrl,
                   label: 'Số nhà (không bắt buộc)',
-                  icon: Icons.home_outlined,
+                  icon: PhosphorIconsRegular.house,
                 ),
                 const SizedBox(height: 12),
                 _StyledField(
                   controller: _duongCtrl,
                   label: 'Đường',
-                  icon: Icons.signpost_outlined,
+                  icon: PhosphorIconsRegular.signpost,
                   validator: (v) => (v == null || v.trim().isEmpty)
                       ? 'Vui lòng nhập tên đường'
                       : null,
                 ),
                 const SizedBox(height: 12),
-                _StyledField(
-                  controller: _phuongXaCtrl,
-                  label: 'Phường / Xã',
-                  icon: Icons.location_city_outlined,
-                  validator: (v) => (v == null || v.trim().isEmpty)
-                      ? 'Vui lòng nhập phường/xã'
-                      : null,
-                ),
-                const SizedBox(height: 12),
-                _StyledField(
-                  controller: _tinhTPCtrl,
-                  label: 'Tỉnh / Thành phố',
-                  icon: Icons.location_on_outlined,
-                  validator: (v) => (v == null || v.trim().isEmpty)
-                      ? 'Vui lòng nhập tỉnh/thành phố'
-                      : null,
+                AddressPickerFields(
+                  provinceCtrl: _tinhTPCtrl,
+                  wardCtrl: _phuongXaCtrl,
                 ),
               ],
             ),
@@ -525,11 +520,15 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF1F5C7A), Color(0xFF2B678B)],
+          colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
         ),
         borderRadius: BorderRadius.circular(18),
         boxShadow: const [
-          BoxShadow(color: Color(0x44000000), blurRadius: 16, offset: Offset(0, 6)),
+          BoxShadow(
+            color: Color(0x402563EB),
+            blurRadius: 16,
+            offset: Offset(0, 6),
+          ),
         ],
       ),
       child: Column(
@@ -537,13 +536,18 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Số sản phẩm',
-                  style: TextStyle(color: Colors.white54, fontSize: 13)),
-              Text('${widget.items.length} tranh',
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600)),
+              const Text(
+                'Số sản phẩm',
+                style: TextStyle(color: Colors.white54, fontSize: 13),
+              ),
+              Text(
+                '${widget.items.length} tranh',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ],
           ),
           if (_cartDiscount > 0) ...[
@@ -555,14 +559,16 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
                   _cartLevelExtraDiscount > 0
                       ? 'Ưu đãi nhiều tranh'
                       : 'Giảm giá',
-                  style: const TextStyle(
-                      color: Color(0xFFFFD54F), fontSize: 13),
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
                 ),
-                Text('- ${_formatCurrency(_cartDiscount)} đ',
-                    style: const TextStyle(
-                        color: Color(0xFFFFD54F),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600)),
+                Text(
+                  '- ${_formatCurrency(_cartDiscount)} đ',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ],
             ),
           ],
@@ -577,11 +583,15 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
               const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('TỔNG THANH TOÁN',
-                      style: TextStyle(color: Colors.white54, fontSize: 12)),
+                  Text(
+                    'TỔNG THANH TOÁN',
+                    style: TextStyle(color: Colors.white54, fontSize: 12),
+                  ),
                   SizedBox(height: 4),
-                  Text('Đã bao gồm VAT',
-                      style: TextStyle(color: Colors.white30, fontSize: 11)),
+                  Text(
+                    'Đã bao gồm VAT',
+                    style: TextStyle(color: Colors.white30, fontSize: 11),
+                  ),
                 ],
               ),
               Text(
@@ -605,7 +615,7 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.green.shade600,
+            backgroundColor: AppColors.blue,
             minimumSize: const Size(double.infinity, 54),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
@@ -618,13 +628,18 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
                   width: 22,
                   height: 22,
                   child: CircularProgressIndicator(
-                      strokeWidth: 2.5, color: Colors.white),
+                    strokeWidth: 2.5,
+                    color: Colors.white,
+                  ),
                 )
               : Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.check_circle_outline_rounded,
-                        color: Colors.white, size: 20),
+                    const Icon(
+                      PhosphorIconsRegular.checkCircle,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                     const SizedBox(width: 10),
                     Text(
                       'ĐẶT TẤT CẢ (${widget.items.length} SẢN PHẨM)',
@@ -649,7 +664,8 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
 
 class _CartInvoicePage extends StatelessWidget {
   final List<CartItem> items;
-  final List<String> orderIds;
+  // Giá đã trừ giảm giá cấp giỏ hàng (đúng giá lưu trong đơn), theo thứ tự items.
+  final List<double> finalPrices;
   final String customerName;
   final String customerPhone;
   final String customerAddress;
@@ -657,7 +673,7 @@ class _CartInvoicePage extends StatelessWidget {
 
   const _CartInvoicePage({
     required this.items,
-    required this.orderIds,
+    required this.finalPrices,
     required this.customerName,
     required this.customerPhone,
     required this.customerAddress,
@@ -666,29 +682,26 @@ class _CartInvoicePage extends StatelessWidget {
 
   String _formatCurrency(double amount) {
     return amount.toInt().toString().replaceAllMapped(
-          RegExp(r'\B(?=(\d{3})+(?!\d))'),
-          (m) => '.',
-        );
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (m) => '.',
+    );
   }
 
   String _formatDate(DateTime dt) {
     return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year} • ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 
-  double get _total => items.fold(0, (s, i) => s + i.tongTien);
+  double get _total => finalPrices.fold(0, (s, p) => s + p);
 
   @override
   Widget build(BuildContext context) {
     final invoiceTheme = Theme.of(context);
     return Scaffold(
       backgroundColor: invoiceTheme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: const Color(0xFF2B678B),
-        title: const Text(
-          'Đặt hàng thành công',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
+      appBar: appSubAppBar(
+        context,
+        'Đặt hàng thành công',
+        showBack: false,
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -699,14 +712,17 @@ class _CartInvoicePage extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
               decoration: BoxDecoration(
-                color: Colors.green.shade50,
+                color: const Color(0xFFEFF6FF),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.green.shade200),
+                border: Border.all(color: const Color(0xFFBFDBFE)),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.check_circle_rounded,
-                      color: Colors.green.shade600, size: 28),
+                  Icon(
+                    PhosphorIconsFill.checkCircle,
+                    color: AppColors.blue,
+                    size: 28,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -715,7 +731,7 @@ class _CartInvoicePage extends StatelessWidget {
                         Text(
                           'Đặt ${items.length} sản phẩm thành công!',
                           style: TextStyle(
-                            color: Colors.green.shade800,
+                            color: const Color(0xFF1E3A8A),
                             fontWeight: FontWeight.bold,
                             fontSize: 15,
                           ),
@@ -723,7 +739,9 @@ class _CartInvoicePage extends StatelessWidget {
                         Text(
                           _formatDate(submittedAt),
                           style: TextStyle(
-                              color: Colors.green.shade700, fontSize: 12),
+                            color: const Color(0xFF1D4ED8),
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ),
@@ -735,10 +753,9 @@ class _CartInvoicePage extends StatelessWidget {
             ...items.asMap().entries.map((entry) {
               final i = entry.key;
               final item = entry.value;
-              final orderId = i < orderIds.length ? orderIds[i] : '';
               return Padding(
                 padding: const EdgeInsets.only(bottom: 10),
-                child: _buildItemInvoiceCard(context, item, orderId, i + 1),
+                child: _buildItemInvoiceCard(context, item, i + 1),
               );
             }),
             const SizedBox(height: 6),
@@ -748,14 +765,15 @@ class _CartInvoicePage extends StatelessWidget {
                 gradient: const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color(0xFF1F5C7A), Color(0xFF2B678B)],
+                  colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
                 ),
                 borderRadius: BorderRadius.circular(18),
                 boxShadow: const [
                   BoxShadow(
-                      color: Color(0x44000000),
-                      blurRadius: 16,
-                      offset: Offset(0, 6)),
+                    color: Color(0x402563EB),
+                    blurRadius: 16,
+                    offset: Offset(0, 6),
+                  ),
                 ],
               ),
               child: Column(
@@ -773,9 +791,10 @@ class _CartInvoicePage extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const Text('TỔNG THANH TOÁN',
-                          style: TextStyle(
-                              color: Colors.white54, fontSize: 12)),
+                      const Text(
+                        'TỔNG THANH TOÁN',
+                        style: TextStyle(color: Colors.white54, fontSize: 12),
+                      ),
                       Text(
                         '${_formatCurrency(_total)} đ',
                         style: const TextStyle(
@@ -789,6 +808,8 @@ class _CartInvoicePage extends StatelessWidget {
                 ],
               ),
             ),
+            const SizedBox(height: 16),
+            const InstallGuideCard(),
           ],
         ),
       ),
@@ -797,10 +818,11 @@ class _CartInvoicePage extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2B678B),
+              backgroundColor: const Color(0xFF2563EB),
               minimumSize: const Size(double.infinity, 54),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
+                borderRadius: BorderRadius.circular(16),
+              ),
               elevation: 3,
             ),
             onPressed: () =>
@@ -808,7 +830,7 @@ class _CartInvoicePage extends StatelessWidget {
             child: const Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.home_rounded, color: Colors.white, size: 20),
+                Icon(PhosphorIconsRegular.house, color: Colors.white, size: 20),
                 SizedBox(width: 10),
                 Text(
                   'Về trang chủ',
@@ -826,7 +848,11 @@ class _CartInvoicePage extends StatelessWidget {
     );
   }
 
-  Widget _buildItemInvoiceCard(BuildContext context, CartItem item, String orderId, int no) {
+  Widget _buildItemInvoiceCard(
+    BuildContext context,
+    CartItem item,
+    int no,
+  ) {
     final t = Theme.of(context);
     final dk = t.brightness == Brightness.dark;
     return Container(
@@ -834,9 +860,7 @@ class _CartInvoicePage extends StatelessWidget {
       decoration: BoxDecoration(
         color: t.cardColor,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 6),
-        ],
+        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 6)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -846,15 +870,16 @@ class _CartInvoicePage extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF2B678B).withValues(alpha: 0.1),
+                  color: const Color(0xFF2563EB).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
                   '#$no',
                   style: const TextStyle(
-                      color: Color(0xFF2B678B),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12),
+                    color: Color(0xFF2563EB),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
@@ -862,14 +887,12 @@ class _CartInvoicePage extends StatelessWidget {
                 child: Text(
                   'Tranh ${item.imageId}',
                   style: TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 14,
-                      color: dk ? Colors.white : null),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: dk ? Colors.white : null,
+                  ),
                 ),
               ),
-              if (orderId.isNotEmpty)
-                Text(orderId,
-                    style: TextStyle(
-                        fontSize: 11, color: dk ? Colors.white38 : Colors.black38)),
             ],
           ),
           const SizedBox(height: 8),
@@ -884,15 +907,18 @@ class _CartInvoicePage extends StatelessWidget {
             }
             return Text(
               'Mặt $mat: $size (${item.chatLieuPerMat[mat] ?? item.chatLieu})',
-              style: TextStyle(fontSize: 13, color: dk ? Colors.white54 : Colors.black54),
+              style: TextStyle(
+                fontSize: 13,
+                color: dk ? Colors.white54 : Colors.black54,
+              ),
             );
           }),
           const SizedBox(height: 4),
           Text(
-            '${_formatCurrency(item.tongTien)} đ',
+            '${_formatCurrency(finalPrices[no - 1])} đ',
             style: const TextStyle(
               fontWeight: FontWeight.bold,
-              color: Color(0xFF2B678B),
+              color: Color(0xFF2563EB),
               fontSize: 14,
             ),
           ),
@@ -905,16 +931,19 @@ class _CartInvoicePage extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label,
-            style: const TextStyle(color: Colors.white54, fontSize: 13)),
+        Text(
+          label,
+          style: const TextStyle(color: Colors.white54, fontSize: 13),
+        ),
         Expanded(
           child: Text(
             value,
             textAlign: TextAlign.right,
             style: const TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.w600),
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ],
@@ -948,7 +977,7 @@ class _StyledField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const primary = Color(0xFF2B678B);
+    const primary = Color(0xFF2563EB);
     final fieldDark = Theme.of(context).brightness == Brightness.dark;
     return TextFormField(
       controller: controller,
@@ -957,19 +986,27 @@ class _StyledField extends StatelessWidget {
       maxLines: maxLines,
       validator: validator,
       style: TextStyle(
-          fontSize: 14,
-          color: fieldDark ? Colors.white : const Color(0xFF1B3A4B),
-          fontWeight: FontWeight.w500),
+        fontSize: 14,
+        color: fieldDark ? Colors.white : AppColors.ink,
+        fontWeight: FontWeight.w500,
+      ),
       decoration: InputDecoration(
         labelText: label,
         labelStyle: const TextStyle(color: primary, fontSize: 13),
         hintText: hint,
-        hintStyle: TextStyle(color: fieldDark ? Colors.white24 : Colors.black26, fontSize: 13),
+        hintStyle: TextStyle(
+          color: fieldDark ? Colors.white24 : Colors.black26,
+          fontSize: 13,
+        ),
         prefixIcon: Icon(icon, color: primary, size: 20),
         filled: true,
-        fillColor: fieldDark ? const Color(0xFF2A2A2A) : const Color(0xFFF4F7F9),
-        contentPadding:
-            const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
+        fillColor: fieldDark
+            ? const Color(0xFF2A2A2A)
+            : const Color(0xFFF4F7F9),
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 14,
+          horizontal: 14,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,

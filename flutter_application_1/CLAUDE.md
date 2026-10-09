@@ -76,9 +76,9 @@ AuthGate
 | **Cloud Storage** | Lưu ảnh tranh theo danh mục |
 | **App Check** | Bảo mật token |
 
-- **Project ID:** `apptranhbeca` (Android), `tranh-3d` (iOS/Web)
+- **Project ID:** `apptranhbeca` (dùng cho mọi nền tảng, Cloud Functions và dashboard)
 - **Storage bucket:** `apptranhbeca.firebasestorage.app`
-- **DB URL:** `https://tranh-3d-default-rtdb.asia-southeast1.firebasedatabase.app`
+- **DB URL:** `https://apptranhbeca-default-rtdb.asia-southeast1.firebasedatabase.app`
 
 ### FastAPI Backend (tìm kiếm ảnh)
 - **URL mặc định:** `http://192.168.1.100:8000`
@@ -159,10 +159,10 @@ double similarity        // 0.0–1.0
 
 **Màu chính:**
 - Light Blue: `0xFF5CC1FF`
-- Dark Teal: `0xFF2B678B` (primaryColor)
+- Blue: `0xFF2563EB` (primaryColor)
 - Background: `0xFFF4F7F9`
 
-**Gradient:** Top→Bottom từ `0xFF5CC1FF` → `0xFF2B678B` (AppBar, splash, login)
+**Gradient:** Top→Bottom từ `0xFF5CC1FF` → `0xFF2563EB` (AppBar, splash, login)
 
 **Font tiền tệ:** VND định dạng với dấu chấm phân cách hàng nghìn
 

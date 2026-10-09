@@ -4,22 +4,31 @@ import hmac
 import io
 import os
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import requests as http_requests
 from PIL import Image
 from firebase_admin import auth as admin_auth
-from firebase_admin import db, firestore, initialize_app
+from firebase_admin import db, firestore, initialize_app, storage
 from firebase_functions import db_fn, https_fn, options
 
 _DB_URL = "https://apptranhbeca-default-rtdb.asia-southeast1.firebasedatabase.app"
-initialize_app(options={"databaseURL": _DB_URL})
+initialize_app(options={"databaseURL": _DB_URL, "storageBucket": "apptranhbeca.firebasestorage.app"})
 
 _ADMIN_EMAIL = "tranhbeca2018@gmail.com"
 
 _OPENAI_KEY = os.environ.get("OPENAI_API_KEY", "").strip().lstrip('﻿')
 _DAILY_LIMIT = 3
+# Trần chung cho cả app mỗi ngày — chặn chi phí OpenAI tăng vọt khi có người
+# tạo hàng loạt tài khoản để ghép ảnh.
+_GLOBAL_DAILY_LIMIT = 150
+_VN_TZ = timezone(timedelta(hours=7))
+# Chỉ nhận ảnh tranh từ Storage của app (không tải URL tùy ý).
+_STORAGE_PREFIX = "https://firebasestorage.googleapis.com/v0/b/apptranhbeca.firebasestorage.app/"
+_COMPOSITE_FAIL_MSG = "Ghép ảnh chưa thành công, lượt đã được hoàn lại. Vui lòng thử lại."
+# Giới hạn lượt ghép/ngày; bật/tắt cùng _quotaEnabled ở composite_screen.dart
+_QUOTA_ENABLED = True
 
 _PROMPT = (
     "Ảnh 1 là ảnh chụp bể cá thực tế của khách hàng. "
@@ -42,17 +51,52 @@ def _to_png_rgba(image_bytes: bytes) -> bytes:
     return buf.getvalue()
 
 
-def _check_and_increment_quota(uid: str) -> int:
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    ref = db.reference(f"composite_quota/{uid}/{today}")
-    count = ref.get() or 0
-    if count >= _DAILY_LIMIT:
+def _today_vn() -> str:
+    # Ngày theo giờ Việt Nam (khớp _todayKey() ở composite_screen.dart).
+    return datetime.now(_VN_TZ).strftime("%Y-%m-%d")
+
+
+def _try_increment(ref, limit: int) -> int | None:
+    # Transaction để các yêu cầu gửi cùng lúc không vượt quá giới hạn.
+    # Trả về số đã dùng sau khi cộng, hoặc None nếu đã hết lượt.
+    exhausted = False
+
+    def _inc(current):
+        nonlocal exhausted
+        count = current or 0
+        exhausted = count >= limit
+        return count if exhausted else count + 1
+
+    count = ref.transaction(_inc)
+    return None if exhausted else count
+
+
+def _refund(ref) -> None:
+    try:
+        ref.transaction(lambda c: max((c or 0) - 1, 0))
+    except Exception as e:
+        print(f"Hoàn lượt ghép lỗi ({ref.path}): {e}")
+
+
+def _take_quota(uid: str):
+    """Trừ 1 lượt của khách + 1 lượt của trần chung.
+    Trả về (số lượt còn lại, danh sách ref để hoàn nếu ghép lỗi)."""
+    today = _today_vn()
+    user_ref = db.reference(f"composite_quota/{uid}/{today}")
+    used = _try_increment(user_ref, _DAILY_LIMIT)
+    if used is None:
         raise https_fn.HttpsError(
             "resource-exhausted",
             f"Bạn đã dùng hết {_DAILY_LIMIT} lượt ghép ảnh hôm nay. Vui lòng quay lại vào ngày mai.",
         )
-    ref.set(count + 1)
-    return _DAILY_LIMIT - (count + 1)
+    global_ref = db.reference(f"composite_quota_global/{today}")
+    if _try_increment(global_ref, _GLOBAL_DAILY_LIMIT) is None:
+        _refund(user_ref)
+        raise https_fn.HttpsError(
+            "resource-exhausted",
+            "Tính năng ghép ảnh đang quá tải hôm nay. Vui lòng quay lại vào ngày mai.",
+        )
+    return _DAILY_LIMIT - used, [user_ref, global_ref]
 
 
 def _generate_image(tank_b64: str, paint_b64: str) -> bytes:
@@ -73,7 +117,7 @@ def _generate_image(tank_b64: str, paint_b64: str) -> bytes:
             "n": "1",
             "size": "1024x1024",
         },
-        timeout=120,
+        timeout=150,
     )
 
     if resp.status_code != 200:
@@ -89,7 +133,9 @@ def _generate_image(tank_b64: str, paint_b64: str) -> bytes:
 @https_fn.on_call(
     region="asia-southeast1",
     memory=options.MemoryOption.GB_1,
-    timeout_sec=120,
+    # Lớn hơn tổng timeout bên trong (tải tranh 15s + OpenAI 150s) để khối
+    # except kịp hoàn lượt; client đặt timeout 200s.
+    timeout_sec=300,
     secrets=["OPENAI_API_KEY"],
 )
 def composite_image(req: https_fn.CallableRequest) -> dict:
@@ -101,24 +147,22 @@ def composite_image(req: https_fn.CallableRequest) -> dict:
     painting_url: str = req.data.get("painting_url", "")
 
     if not tank_b64 or not painting_url:
-        raise https_fn.HttpsError(
-            "invalid-argument", "Thiếu tank_image_b64 hoặc painting_url"
-        )
+        raise https_fn.HttpsError("invalid-argument", "Thiếu ảnh bể cá hoặc ảnh tranh.")
+    if not painting_url.startswith(_STORAGE_PREFIX):
+        raise https_fn.HttpsError("invalid-argument", "Ảnh tranh không hợp lệ.")
 
-    remaining = _check_and_increment_quota(uid)
+    remaining, quota_refs = _take_quota(uid) if _QUOTA_ENABLED else (None, [])
 
     try:
-        paint_resp = http_requests.get(painting_url, timeout=30)
+        paint_resp = http_requests.get(painting_url, timeout=15)
         paint_resp.raise_for_status()
-    except Exception as e:
-        raise https_fn.HttpsError("unavailable", f"Không tải được ảnh tranh: {e}")
-
-    paint_b64 = base64.b64encode(paint_resp.content).decode("utf-8")
-
-    try:
+        paint_b64 = base64.b64encode(paint_resp.content).decode("utf-8")
         image_bytes = _generate_image(tank_b64, paint_b64)
     except Exception as e:
-        raise https_fn.HttpsError("internal", str(e))
+        print(f"composite_image lỗi cho {uid}: {e}")
+        for ref in quota_refs:
+            _refund(ref)
+        raise https_fn.HttpsError("internal", _COMPOSITE_FAIL_MSG)
 
     return {
         "image_b64": base64.b64encode(image_bytes).decode("utf-8"),
@@ -379,14 +423,28 @@ def _format_group_msg(data):
 def notify_order_group(req: https_fn.CallableRequest) -> dict:
     """Gộp nhiều đơn cùng 1 lượt thanh toán giỏ hàng thành 1 tin Zalo duy
     nhất — gọi bởi client SAU KHI đã lưu xong các đơn (mỗi đơn đó có
-    groupId nên on_order_created sẽ bỏ qua, tránh gửi trùng)."""
+    groupId nên on_order_created sẽ bỏ qua, tránh gửi trùng).
+
+    Client chỉ gửi danh sách orderId; nội dung tin đọc từ chính đơn đã lưu
+    trong orders/{uid} của người gọi — không tin dữ liệu client gửi lên."""
     if req.auth is None:
         raise https_fn.HttpsError("unauthenticated", "Cần đăng nhập")
 
-    data = req.data or {}
-    items = data.get("items", [])
-    if not items:
-        raise https_fn.HttpsError("invalid-argument", "Thiếu items")
+    order_ids = (req.data or {}).get("orderIds", [])
+    if not isinstance(order_ids, list) or not order_ids or len(order_ids) > 50:
+        raise https_fn.HttpsError("invalid-argument", "Thiếu danh sách đơn")
+
+    orders = []
+    for oid in order_ids:
+        if not isinstance(oid, str) or not oid or "/" in oid or "." in oid:
+            continue
+        order = db.reference(f"orders/{req.auth.uid}/{oid}").get()
+        # Chỉ gộp đơn thuộc giỏ hàng (có groupId) — đơn lẻ đã được
+        # on_order_created tự báo, tránh gửi trùng.
+        if isinstance(order, dict) and order.get("groupId"):
+            orders.append(order)
+    if not orders:
+        raise https_fn.HttpsError("not-found", "Không tìm thấy đơn")
 
     zalo = _get_zalo_config()
     if not zalo:
@@ -397,14 +455,21 @@ def notify_order_group(req: https_fn.CallableRequest) -> dict:
     sk = zalo["secret_key"]
     uid = zalo["user_id"]
 
-    for item in items:
-        image_url = item.get("imageUrl", "")
-        if image_url:
+    for order in orders:
+        image_url = str(order.get("imageUrl", ""))
+        if image_url.startswith(_STORAGE_PREFIX):
             att_id = _upload_image_to_zalo(at, sk, image_url)
             if att_id:
                 _send_zalo_image(at, sk, uid, att_id)
 
-    msg = _format_group_msg(data)
+    first = orders[0]
+    msg = _format_group_msg({
+        "customerName": first.get("customerName", "N/A"),
+        "customerPhone": first.get("customerPhone", "N/A"),
+        "customerAddress": first.get("customerAddress", "N/A"),
+        "items": orders,
+        "tongTien": sum(float(o.get("tongTien", 0) or 0) for o in orders),
+    })
     ok = _send_zalo_msg(at, sk, uid, msg)
     print(f"Zalo OA group text {'OK' if ok else 'FAIL'}")
     return {"sent": ok}
@@ -434,8 +499,8 @@ def on_order_created(event: db_fn.Event[Any]) -> None:
     uid = zalo["user_id"]
     oid = event.params.get("order_id", "?")
 
-    image_url = order.get("imageUrl", "")
-    if image_url:
+    image_url = str(order.get("imageUrl", ""))
+    if image_url.startswith(_STORAGE_PREFIX):
         att_id = _upload_image_to_zalo(at, sk, image_url)
         if att_id:
             img_ok = _send_zalo_image(at, sk, uid, att_id)
@@ -446,6 +511,66 @@ def on_order_created(event: db_fn.Event[Any]) -> None:
     msg = _format_order_msg(order)
     ok = _send_zalo_msg(at, sk, uid, msg)
     print(f"Zalo OA text {'OK' if ok else 'FAIL'} cho đơn {oid}")
+
+
+def _format_cancel_msg(order):
+    kt = order.get("kichThuoc", {})
+    tien = f'{int(order.get("tongTien", 0) or 0):,}'.replace(",", ".")
+    cl_per_mat = order.get("chatLieuPerMat", {})
+    cl_default = order.get("chatLieu", "N/A")
+
+    lines = [
+        "❌ KHÁCH HỦY ĐƠN - Tranh Bể Cá 3D",
+        "",
+        f"👤 Khách: {order.get('customerName', 'N/A')}",
+        f"📞 SĐT: {order.get('customerPhone', 'N/A')}",
+        f"📍 Địa chỉ: {order.get('customerAddress', 'N/A')}",
+        "",
+        f"🖼 Mã tranh: {order.get('imageId', 'N/A')}",
+    ]
+    for mat in _as_list(order.get("cacMatIn", [])):
+        size = _panel_size(kt, mat)
+        cl = cl_per_mat.get(mat, cl_default)
+        lines.append(f"📐 Tấm {mat}: {size} cm - {cl}")
+    lines.append(f"💰 Tổng tiền: {tien} đ")
+    lines.append("")
+    lines.append(f"📝 Lý do hủy: {order.get('cancelReason', 'Không ghi lý do')}")
+    return "\n".join(lines)
+
+
+@db_fn.on_value_written(
+    reference="orders/{uid}/{order_id}/status",
+    region="asia-southeast1",
+)
+def on_order_status_changed(event: db_fn.Event[db_fn.Change[Any]]) -> None:
+    """Gửi Zalo OA cho shop khi KHÁCH tự hủy đơn trong app.
+
+    Khách hủy luôn kèm cancelReason (app bắt buộc chọn lý do); admin hủy
+    từ trang quản lý đơn không có cancelReason nên không gửi lại cho shop."""
+    before = event.data.before
+    after = event.data.after
+    if after != "da_huy" or before == "da_huy":
+        return
+
+    user_id = event.params.get("uid", "")
+    oid = event.params.get("order_id", "?")
+    order = db.reference(f"orders/{user_id}/{oid}").get()
+    if not order or not isinstance(order, dict):
+        return
+    if not order.get("cancelReason"):
+        print(f"Đơn {oid} do admin hủy — không gửi thông báo")
+        return
+
+    zalo = _get_zalo_config()
+    if not zalo:
+        print("Zalo OA chưa cấu hình hoặc token hết hạn (on_order_status_changed)")
+        return
+
+    ok = _send_zalo_msg(
+        zalo["access_token"], zalo["secret_key"], zalo["user_id"],
+        _format_cancel_msg(order),
+    )
+    print(f"Zalo OA hủy đơn {'OK' if ok else 'FAIL'} cho đơn {oid}")
 
 
 # ── Admin: xóa khách hàng (Dashboard web) ────────────────────────────
@@ -466,6 +591,16 @@ def admin_delete_customer(req: https_fn.CallableRequest) -> dict:
     if not uid and not firestore_doc_id:
         raise https_fn.HttpsError("invalid-argument", "Thiếu uid hoặc firestoreDocId.")
 
+    # Tài khoản quản trị duy nhất: không bao giờ cho xóa
+    if uid == req.auth.uid:
+        raise https_fn.HttpsError("permission-denied", "Không thể xóa tài khoản quản trị.")
+    if uid:
+        try:
+            if (admin_auth.get_user(uid).email or "").lower() == _ADMIN_EMAIL:
+                raise https_fn.HttpsError("permission-denied", "Không thể xóa tài khoản quản trị.")
+        except admin_auth.UserNotFoundError:
+            pass
+
     result = {"auth_deleted": False, "rtdb_deleted": False, "firestore_deleted": False}
 
     if uid:
@@ -482,6 +617,16 @@ def admin_delete_customer(req: https_fn.CallableRequest) -> dict:
             result["rtdb_deleted"] = True
         except Exception as e:
             print(f"admin_delete_customer: xóa RTDB users/{uid} lỗi: {e}")
+
+        # Ảnh riêng của khách: ảnh đại diện + ảnh AI ghép
+        try:
+            bucket = storage.bucket()
+            for prefix in (f"avatars/{uid}/", f"composites/{uid}/"):
+                for blob in bucket.list_blobs(prefix=prefix):
+                    blob.delete()
+            result["storage_deleted"] = True
+        except Exception as e:
+            print(f"admin_delete_customer: xóa ảnh Storage của {uid} lỗi: {e}")
 
     if firestore_doc_id:
         try:

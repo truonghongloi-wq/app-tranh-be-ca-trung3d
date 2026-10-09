@@ -14,8 +14,9 @@ class ThemeStore {
   }
 
   static Future<void> toggle() async {
-    final next =
-        mode.value == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+    final next = mode.value == ThemeMode.dark
+        ? ThemeMode.light
+        : ThemeMode.dark;
     mode.value = next;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_key, next == ThemeMode.dark ? 'dark' : 'light');
@@ -25,8 +26,15 @@ class ThemeStore {
 
   static final lightTheme = ThemeData(
     brightness: Brightness.light,
-    primarySwatch: Colors.blue,
-    primaryColor: const Color(0xFF2B678B),
+    // Material 3 bỏ qua primarySwatch: phải khai báo colorScheme, nếu không
+    // các widget mặc định (nút, bottom sheet, dialog...) dùng tông tím gốc.
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: const Color(0xFF2563EB),
+      primary: const Color(0xFF2563EB),
+      surface: Colors.white,
+      surfaceTint: Colors.transparent,
+    ),
+    primaryColor: const Color(0xFF2563EB),
     scaffoldBackgroundColor: const Color(0xFFF4F7F9),
     fontFamily: 'Roboto',
     visualDensity: VisualDensity.adaptivePlatformDensity,
@@ -38,15 +46,21 @@ class ThemeStore {
     cardColor: Colors.white,
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       backgroundColor: Colors.white,
-      selectedItemColor: Color(0xFF2B678B),
+      selectedItemColor: Color(0xFF2563EB),
       unselectedItemColor: Colors.grey,
     ),
   );
 
   static final darkTheme = ThemeData(
     brightness: Brightness.dark,
-    primarySwatch: Colors.blue,
-    primaryColor: const Color(0xFF2B678B),
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: const Color(0xFF2563EB),
+      brightness: Brightness.dark,
+      primary: const Color(0xFF5CC1FF),
+      surface: const Color(0xFF1E1E1E),
+      surfaceTint: Colors.transparent,
+    ),
+    primaryColor: const Color(0xFF2563EB),
     scaffoldBackgroundColor: const Color(0xFF121212),
     fontFamily: 'Roboto',
     visualDensity: VisualDensity.adaptivePlatformDensity,

@@ -1,3 +1,4 @@
+import '../../widgets/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../app_globals.dart';
@@ -6,6 +7,7 @@ import '../composite/composite_screen.dart';
 import '../order/order_confirmation_page.dart';
 import '../order/order_history_page.dart';
 import '../order/order_store.dart';
+import '../../widgets/app_ui.dart';
 
 class ProductDetailPage extends StatefulWidget {
   final String imageId;
@@ -26,8 +28,7 @@ class ProductDetailPage extends StatefulWidget {
 }
 
 class _ProductDetailPageState extends State<ProductDetailPage> {
-  static const Color _primary = Color(0xFF2B678B);
-  static const Color _gradientTop = Color(0xFF5CC1FF);
+  static const Color _primary = Color(0xFF2563EB);
 
   final Map<String, String?> selectedFacesData = {
     'Mặt lưng': 'Tranh dán ngoài',
@@ -37,11 +38,11 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   };
 
   PriceConfig _priceConfig = PriceConfig.defaults;
-  String? _compositeImageUrl;
 
   late double chieuDai;
   late double chieuCao;
   late double chieuRong;
+  bool _showDimErrors = false;
   int soLuongSi = 1;
   String chatLieu = 'Tranh dán ngoài';
 
@@ -58,14 +59,14 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   @override
   void initState() {
     super.initState();
-    final parts = widget.initialSize.split('x');
-    chieuDai = double.tryParse(parts.first) ?? 60.0;
-    chieuCao = double.tryParse(parts.length > 1 ? parts[1] : '') ?? 30.0;
-    chieuRong = 30.0;
+    // Khách bắt buộc tự nhập kích thước bể, không điền sẵn để tránh hiểu nhầm giá
+    chieuDai = 0;
+    chieuCao = 0;
+    chieuRong = 0;
 
-    _daiController = TextEditingController(text: chieuDai.toStringAsFixed(0));
-    _caoController = TextEditingController(text: chieuCao.toStringAsFixed(0));
-    _rongController = TextEditingController(text: chieuRong.toStringAsFixed(0));
+    _daiController = TextEditingController();
+    _caoController = TextEditingController();
+    _rongController = TextEditingController();
     _soLuongController = TextEditingController(text: soLuongSi.toString());
 
     UserService.loadCurrentUserPrices().then((cfg) {
@@ -86,12 +87,31 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
   String _displayFaceName(String faceName) {
     switch (faceName) {
-      case 'Mặt lưng': return 'lưng';
-      case 'Mặt đáy':  return 'đáy';
-      case 'Hông trái': return 'hông trái';
-      case 'Hông phải': return 'hông phải';
-      default: return faceName;
+      case 'Mặt lưng':
+        return 'lưng';
+      case 'Mặt đáy':
+        return 'đáy';
+      case 'Hông trái':
+        return 'hông trái';
+      case 'Hông phải':
+        return 'hông phải';
+      default:
+        return faceName;
     }
+  }
+
+  bool get _hasDims => chieuDai > 0 && chieuRong > 0 && chieuCao > 0;
+
+  bool _validateDims() {
+    if (_hasDims) return true;
+    setState(() => _showDimErrors = true);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Vui lòng nhập đủ kích thước bể (dài, rộng, cao)'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+    return false;
   }
 
   int get soTamTichChon =>
@@ -101,8 +121,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
   double get tongDienTich {
     double d = 0;
-    if (_isFaceSelected('Mặt lưng'))  d += chieuDai * chieuCao;
-    if (_isFaceSelected('Mặt đáy'))   d += chieuDai * chieuRong;
+    if (_isFaceSelected('Mặt lưng')) d += chieuDai * chieuCao;
+    if (_isFaceSelected('Mặt đáy')) d += chieuDai * chieuRong;
     if (_isFaceSelected('Hông trái')) d += chieuRong * chieuCao;
     if (_isFaceSelected('Hông phải')) d += chieuRong * chieuCao;
     return (d / 10000) * soLuongSi;
@@ -148,20 +168,21 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   _buildViewOnTankButton(),
                   const SizedBox(height: 12),
                   _buildSection(
-                    icon: Icons.straighten_rounded,
-                    title: '1. Kích thước bể (cm)',
+                    icon: PhosphorIconsRegular.ruler,
+                    title: '1. Kích thước bể (cm) *',
+                    subtitle: 'Bắt buộc: đo kích thước thực tế bể của bạn',
                     child: _buildDimensionInputs(),
                   ),
                   const SizedBox(height: 16),
                   _buildSection(
-                    icon: Icons.grid_view_rounded,
+                    icon: PhosphorIconsRegular.squaresFour,
                     title: '2. Chọn mặt cần in',
                     subtitle: 'Chọn những mặt bạn muốn in tranh',
                     child: _buildFaceSelector(),
                   ),
                   const SizedBox(height: 16),
                   _buildSection(
-                    icon: Icons.tune_rounded,
+                    icon: PhosphorIconsRegular.slidersHorizontal,
                     title: '3. Tùy chọn thêm',
                     child: _buildExtraOptions(),
                   ),
@@ -178,36 +199,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   }
 
   Widget _buildAppBar(BuildContext context) {
-    return SliverAppBar(
-      expandedHeight: 70,
-      floating: true,
-      pinned: true,
-      elevation: 0,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-        onPressed: () => Navigator.pop(context),
-      ),
-      flexibleSpace: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [_gradientTop, _primary],
-          ),
-        ),
-        child: FlexibleSpaceBar(
-          titlePadding: const EdgeInsets.only(left: 56, bottom: 14),
-          title: Text(
-            'Cấu hình tranh',
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 17,
-            ),
-          ),
-        ),
-      ),
-    );
+    return const AppSubHeader(title: 'Cấu hình tranh');
   }
 
   Widget _buildPreviewCard() {
@@ -217,7 +209,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x22000000),
+            color: Color(0x1F2563EB),
             blurRadius: 16,
             offset: Offset(0, 6),
           ),
@@ -238,7 +230,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                       return Container(
                         width: double.infinity,
                         height: 230,
-                        color: const Color(0xFFDDE8EF),
+                        color: const Color(0xFFEFF6FF),
                         child: const Center(
                           child: CircularProgressIndicator(
                             color: _primary,
@@ -253,7 +245,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
             // bottom gradient
             Positioned(
-              bottom: 0, left: 0, right: 0,
+              bottom: 0,
+              left: 0,
+              right: 0,
               child: Container(
                 height: 80,
                 decoration: const BoxDecoration(
@@ -275,22 +269,20 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     return Container(
       width: double.infinity,
       height: 230,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF5CC1FF), Color(0xFF2B678B)],
-        ),
-      ),
+      color: const Color(0xFFEFF6FF),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.image, size: 64, color: Colors.white54),
+          const Icon(
+            PhosphorIconsRegular.image,
+            size: 64,
+            color: Color(0x992563EB),
+          ),
           const SizedBox(height: 10),
           Text(
             widget.imageId,
             style: const TextStyle(
-              color: Colors.white,
+              color: Color(0xFF1E293B),
               fontWeight: FontWeight.bold,
               fontSize: 18,
             ),
@@ -303,9 +295,10 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   Widget _buildViewOnTankButton() {
     if (widget.imageUrl == null) return const SizedBox();
     return OutlinedButton.icon(
-      icon: const Icon(Icons.auto_fix_high_rounded),
+      icon: const Icon(PhosphorIconsRegular.magicWand),
       label: const Text('Xem thử trên bể nhà bạn'),
       onPressed: () async {
+        if (!_validateDims()) return;
         final selectedFaces = selectedFacesData.entries
             .where((e) => e.value != null)
             .map((e) => _displayFaceName(e.key))
@@ -323,7 +316,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             .whereType<String>()
             .toSet()
             .join(', ');
-        final compositeUrl = await Navigator.push<String?>(
+        final tried = await Navigator.push<bool?>(
           context,
           MaterialPageRoute(
             builder: (_) => CompositeScreen(
@@ -343,11 +336,12 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             ),
           ),
         );
-        if (compositeUrl != null && mounted) {
-          setState(() => _compositeImageUrl = compositeUrl);
+        if (tried == true && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Đã lưu ảnh xem thử — nhập kích thước và chọn mặt in rồi đặt đơn'),
+              content: Text(
+                'Đã xem thử — nhập kích thước và chọn mặt in rồi đặt đơn',
+              ),
               behavior: SnackBarBehavior.floating,
               duration: Duration(seconds: 4),
             ),
@@ -377,7 +371,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         borderRadius: BorderRadius.circular(18),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x0F000000),
+            color: Color(0x122563EB),
             blurRadius: 10,
             offset: Offset(0, 3),
           ),
@@ -405,7 +399,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : const Color(0xFF1B3A4B),
+                      color: isDark ? Colors.white : AppColors.ink,
                     ),
                   ),
                   if (subtitle != null)
@@ -430,14 +424,32 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   Widget _buildDimensionInputs() {
     return Row(
       children: [
-        Expanded(child: _dimField(label: 'Dài', controller: _daiController,
-            onChanged: (v) => setState(() => chieuDai = double.tryParse(v) ?? 0))),
+        Expanded(
+          child: _dimField(
+            label: 'Dài',
+            controller: _daiController,
+            onChanged: (v) =>
+                setState(() => chieuDai = double.tryParse(v) ?? 0),
+          ),
+        ),
         const SizedBox(width: 10),
-        Expanded(child: _dimField(label: 'Rộng', controller: _rongController,
-            onChanged: (v) => setState(() => chieuRong = double.tryParse(v) ?? 0))),
+        Expanded(
+          child: _dimField(
+            label: 'Rộng',
+            controller: _rongController,
+            onChanged: (v) =>
+                setState(() => chieuRong = double.tryParse(v) ?? 0),
+          ),
+        ),
         const SizedBox(width: 10),
-        Expanded(child: _dimField(label: 'Cao', controller: _caoController,
-            onChanged: (v) => setState(() => chieuCao = double.tryParse(v) ?? 0))),
+        Expanded(
+          child: _dimField(
+            label: 'Cao',
+            controller: _caoController,
+            onChanged: (v) =>
+                setState(() => chieuCao = double.tryParse(v) ?? 0),
+          ),
+        ),
       ],
     );
   }
@@ -451,11 +463,14 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF2B678B))),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF2563EB),
+          ),
+        ),
         const SizedBox(height: 6),
         TextField(
           controller: controller,
@@ -463,15 +478,36 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           textAlign: TextAlign.center,
           style: TextStyle(
-              fontSize: 15, fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : const Color(0xFF1B3A4B)),
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            color: isDark ? Colors.white : AppColors.ink,
+          ),
           decoration: InputDecoration(
+            hintText: 'Nhập',
+            hintStyle: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: isDark ? Colors.white30 : Colors.black26,
+            ),
             filled: true,
-            fillColor: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF4F7F9),
-            contentPadding:
-                const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-            suffix: const Text('cm',
-                style: TextStyle(fontSize: 11, color: Colors.black38)),
+            fillColor: isDark
+                ? const Color(0xFF2A2A2A)
+                : const Color(0xFFF4F7F9),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide:
+                  _showDimErrors && (double.tryParse(controller.text) ?? 0) <= 0
+                  ? BorderSide(color: Colors.red.shade400, width: 1.5)
+                  : BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 12,
+              horizontal: 8,
+            ),
+            suffix: const Text(
+              'cm',
+              style: TextStyle(fontSize: 11, color: Colors.black38),
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide.none,
@@ -504,11 +540,17 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? (isDark ? const Color(0xFF1A3A4B) : const Color(0xFFE8F4FD))
-                    : (isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF8FAFB)),
+                    ? (isDark
+                          ? const Color(0xFF1A3A4B)
+                          : const Color(0xFFE8F4FD))
+                    : (isDark
+                          ? const Color(0xFF2A2A2A)
+                          : const Color(0xFFF8FAFB)),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: isSelected ? _primary : (isDark ? Colors.white12 : const Color(0xFFDDE3E9)),
+                  color: isSelected
+                      ? _primary
+                      : (isDark ? Colors.white12 : const Color(0xFFDDE3E9)),
                   width: isSelected ? 1.5 : 1,
                 ),
               ),
@@ -516,8 +558,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                 children: [
                   Icon(
                     isSelected
-                        ? Icons.check_box_rounded
-                        : Icons.check_box_outline_blank_rounded,
+                        ? PhosphorIconsFill.checkSquare
+                        : PhosphorIconsRegular.square,
                     color: isSelected ? _primary : Colors.black26,
                     size: 22,
                   ),
@@ -530,7 +572,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                             ? FontWeight.bold
                             : FontWeight.normal,
                         color: isSelected
-                            ? (isDark ? Colors.white : const Color(0xFF1B3A4B))
+                            ? (isDark ? Colors.white : AppColors.ink)
                             : (isDark ? Colors.white54 : Colors.black54),
                         fontSize: 14,
                       ),
@@ -540,15 +582,20 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     DropdownButton<String>(
                       value: selectedFacesData[faceName],
                       underline: const SizedBox(),
-                      icon: const Icon(Icons.expand_more_rounded,
-                          size: 18, color: _primary),
+                      icon: const Icon(
+                        PhosphorIconsRegular.caretDown,
+                        size: 18,
+                        color: _primary,
+                      ),
                       style: const TextStyle(
                         color: _primary,
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                       ),
                       items: _chatLieuOptions
-                          .map((v) => DropdownMenuItem(value: v, child: Text(v)))
+                          .map(
+                            (v) => DropdownMenuItem(value: v, child: Text(v)),
+                          )
                           .toList(),
                       onChanged: (newVal) => setState(() {
                         selectedFacesData[faceName] = newVal;
@@ -575,12 +622,12 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: isDark ? Colors.white : const Color(0xFF1B3A4B),
+              color: isDark ? Colors.white : AppColors.ink,
             ),
           ),
         ),
         _QtyButton(
-          icon: Icons.remove,
+          icon: PhosphorIconsRegular.minus,
           onTap: () {
             if (soLuongSi <= 1) return;
             setState(() {
@@ -597,12 +644,15 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             textAlign: TextAlign.center,
             style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : const Color(0xFF1B3A4B)),
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : AppColors.ink,
+            ),
             decoration: InputDecoration(
               filled: true,
-              fillColor: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF4F7F9),
+              fillColor: isDark
+                  ? const Color(0xFF2A2A2A)
+                  : const Color(0xFFF4F7F9),
               contentPadding: const EdgeInsets.symmetric(vertical: 10),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -615,12 +665,14 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             ),
             onChanged: (v) {
               final parsed = int.tryParse(v);
-              setState(() => soLuongSi = (parsed == null || parsed < 1) ? 1 : parsed);
+              setState(
+                () => soLuongSi = (parsed == null || parsed < 1) ? 1 : parsed,
+              );
             },
           ),
         ),
         _QtyButton(
-          icon: Icons.add,
+          icon: PhosphorIconsRegular.plus,
           onTap: () {
             setState(() {
               soLuongSi++;
@@ -637,16 +689,20 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     final r = chieuRong.toInt();
     final c = chieuCao.toInt();
     switch (faceName) {
-      case 'Mặt lưng':  return '$d×$c cm';
-      case 'Mặt đáy':   return '$d×$r cm';
+      case 'Mặt lưng':
+        return '$d×$c cm';
+      case 'Mặt đáy':
+        return '$d×$r cm';
       case 'Hông trái':
-      case 'Hông phải': return '$r×$c cm';
-      default:           return '';
+      case 'Hông phải':
+        return '$r×$c cm';
+      default:
+        return '';
     }
   }
 
   Widget _buildSummaryCard() {
-    final hasSelection = soTamTichChon > 0;
+    final hasSelection = soTamTichChon > 0 && _hasDims;
     final selectedFaces = selectedFacesData.keys
         .where((k) => _isFaceSelected(k))
         .toList();
@@ -657,12 +713,12 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF1F5C7A), Color(0xFF2B678B)],
+          colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x44000000),
+            color: Color(0x402563EB),
             blurRadius: 16,
             offset: Offset(0, 6),
           ),
@@ -673,7 +729,11 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         children: [
           const Row(
             children: [
-              Icon(Icons.receipt_long_rounded, color: Colors.white70, size: 18),
+              Icon(
+                PhosphorIconsRegular.receipt,
+                color: Colors.white70,
+                size: 18,
+              ),
               SizedBox(width: 8),
               Text(
                 'Tóm tắt đơn hàng',
@@ -702,10 +762,34 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               _summaryRow(
                 'Giảm giá',
                 '- ${_formatCurrency(discountAmount)} đ',
-                valueColor: const Color(0xFFFFD54F),
+                valueColor: Colors.white,
               ),
             ],
-          ] else
+          ] else if (!_hasDims)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 4),
+              child: Row(
+                children: [
+                  Icon(
+                    PhosphorIconsRegular.info,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Nhập đủ kích thước bể (dài, rộng, cao) để xem giá',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
             _summaryRow('Số lượng', '—'),
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 12),
@@ -738,21 +822,32 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     );
   }
 
-  Widget _summaryRow(String label, String value, {Color? valueColor, bool lineThrough = false}) {
+  Widget _summaryRow(
+    String label,
+    String value, {
+    Color? valueColor,
+    bool lineThrough = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label,
-              style: const TextStyle(color: Colors.white54, fontSize: 13)),
-          Text(value,
-              style: TextStyle(
-                  color: valueColor ?? (lineThrough ? Colors.white54 : Colors.white),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  decoration: lineThrough ? TextDecoration.lineThrough : null,
-                  decorationColor: Colors.white38)),
+          Text(
+            label,
+            style: const TextStyle(color: Colors.white54, fontSize: 13),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              color:
+                  valueColor ?? (lineThrough ? Colors.white54 : Colors.white),
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              decoration: lineThrough ? TextDecoration.lineThrough : null,
+              decorationColor: Colors.white38,
+            ),
+          ),
         ],
       ),
     );
@@ -760,9 +855,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
   String _formatCurrency(double amount) {
     return amount.toInt().toString().replaceAllMapped(
-          RegExp(r'\B(?=(\d{3})+(?!\d))'),
-          (m) => '.',
-        );
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (m) => '.',
+    );
   }
 
   Map<String, dynamic> _buildOrderParams() {
@@ -770,10 +865,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         .where((e) => e.value != null)
         .map((e) => _displayFaceName(e.key))
         .toList();
-    final materials = selectedFacesData.values
-        .whereType<String>()
-        .toSet()
-        .join(', ');
+    final materials = selectedFacesData.values.whereType<String>().toSet().join(
+      ', ',
+    );
     final chatLieuPerMat = {
       for (final e in selectedFacesData.entries)
         if (e.value != null) _displayFaceName(e.key): e.value!,
@@ -807,26 +901,27 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           children: [
             OutlinedButton(
               style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFFE65100),
+                foregroundColor: AppColors.blue,
                 minimumSize: const Size(double.infinity, 50),
-                side: const BorderSide(color: Color(0xFFE65100), width: 1.5),
+                side: const BorderSide(color: AppColors.blue, width: 1.5),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
               ),
               onPressed: () {
-                if (!_validateSelection()) return;
+                if (!_validateDims() || !_validateSelection()) return;
                 final params = _buildOrderParams();
                 final item = CartItem(
                   imageId: widget.imageId,
-                  imageUrl: _compositeImageUrl ?? widget.imageUrl,
+                  imageUrl: widget.imageUrl,
                   tongDienTich: tongDienTich,
                   tongTien: thanhTien,
                   discountTien: discountAmount,
                   phiShip: phiShip,
                   tongSoTam: tongSoTam,
                   chatLieu: params['materials'] as String,
-                  chatLieuPerMat: params['chatLieuPerMat'] as Map<String, String>,
+                  chatLieuPerMat:
+                      params['chatLieuPerMat'] as Map<String, String>,
                   cacMatIn: params['selectedFaces'] as List<String>,
                   kichThuoc: {
                     'D': _daiController.text,
@@ -844,7 +939,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                       label: 'Xem giỏ',
                       onPressed: () {
                         appNavigatorKey.currentState?.push(
-                          MaterialPageRoute(builder: (_) => const OrderHistoryPage()),
+                          MaterialPageRoute(
+                            builder: (_) => const OrderHistoryPage(),
+                          ),
                         );
                       },
                     ),
@@ -854,7 +951,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.shopping_cart_outlined, size: 20),
+                  Icon(PhosphorIconsRegular.shoppingCart, size: 20),
                   SizedBox(width: 10),
                   Text(
                     'THÊM VÀO GIỎ HÀNG',
@@ -878,20 +975,21 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                 elevation: 3,
               ),
               onPressed: () {
-                if (!_validateSelection()) return;
+                if (!_validateDims() || !_validateSelection()) return;
                 final params = _buildOrderParams();
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) => OrderConfirmationPage(
                       imageId: widget.imageId,
-                      imageUrl: _compositeImageUrl ?? widget.imageUrl,
+                      imageUrl: widget.imageUrl,
                       tongDienTich: tongDienTich,
                       tongTien: thanhTien,
                       discountTien: discountAmount,
                       tongSoTam: tongSoTam,
                       chatLieu: params['materials'] as String,
-                      chatLieuPerMat: params['chatLieuPerMat'] as Map<String, String>,
+                      chatLieuPerMat:
+                          params['chatLieuPerMat'] as Map<String, String>,
                       cacMatIn: params['selectedFaces'] as List<String>,
                       kichThuoc: {
                         'D': _daiController.text,
@@ -905,7 +1003,11 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.local_print_shop_rounded, color: Colors.white, size: 20),
+                  Icon(
+                    PhosphorIconsRegular.printer,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                   SizedBox(width: 10),
                   Text(
                     'ĐẶT IN NGAY',
@@ -942,10 +1044,10 @@ class _QtyButton extends StatelessWidget {
         height: 36,
         margin: const EdgeInsets.symmetric(horizontal: 6),
         decoration: BoxDecoration(
-          color: const Color(0xFF2B678B).withValues(alpha: 0.1),
+          color: const Color(0xFF2563EB).withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(icon, size: 18, color: const Color(0xFF2B678B)),
+        child: Icon(icon, size: 18, color: const Color(0xFF2563EB)),
       ),
     );
   }

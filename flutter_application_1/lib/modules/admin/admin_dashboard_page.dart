@@ -1,3 +1,4 @@
+import '../../widgets/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../services/auth_service.dart';
@@ -11,7 +12,7 @@ class AdminDashboardPage extends StatefulWidget {
 }
 
 class _AdminDashboardPageState extends State<AdminDashboardPage> {
-  static const Color _primary = Color(0xFF2B678B);
+  static const Color _primary = Color(0xFF2563EB);
   static const Color _gradientTop = Color(0xFF5CC1FF);
 
   List<UserRecord> _users = [];
@@ -26,7 +27,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   Future<void> _loadUsers() async {
     setState(() => _loading = true);
     final users = await UserService.loadAllUsers();
-    if (mounted) setState(() { _users = users; _loading = false; });
+    if (mounted) {
+      setState(() {
+        _users = users;
+        _loading = false;
+      });
+    }
   }
 
   @override
@@ -40,14 +46,21 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             pinned: true,
             floating: true,
             elevation: 0,
+            iconTheme: const IconThemeData(color: Colors.white),
             actions: [
               IconButton(
-                icon: const Icon(Icons.refresh, color: Colors.white),
+                icon: const Icon(
+                  PhosphorIconsRegular.arrowClockwise,
+                  color: Colors.white,
+                ),
                 tooltip: 'Tải lại',
                 onPressed: _loadUsers,
               ),
               IconButton(
-                icon: const Icon(Icons.logout, color: Colors.white),
+                icon: const Icon(
+                  PhosphorIconsRegular.signOut,
+                  color: Colors.white,
+                ),
                 tooltip: 'Đăng xuất',
                 onPressed: _confirmLogout,
               ),
@@ -129,16 +142,19 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         content: const Text('Bạn có chắc muốn đăng xuất không?'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Hủy')),
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Hủy'),
+          ),
           TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Đăng xuất',
-                  style: TextStyle(color: Colors.red))),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Đăng xuất', style: TextStyle(color: Colors.red)),
+          ),
         ],
       ),
     );
-    if (ok == true) await AuthService.signOut();
+    if (ok != true) return;
+    await AuthService.signOut();
+    if (mounted) Navigator.of(context).popUntil((r) => r.isFirst);
   }
 }
 
@@ -155,37 +171,51 @@ class _StatCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF1F5C7A), Color(0xFF2B678B)],
+          colors: [Color(0xFF1F5C7A), Color(0xFF2563EB)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(18),
         boxShadow: const [
-          BoxShadow(color: Color(0x33000000), blurRadius: 12, offset: Offset(0, 4))
+          BoxShadow(
+            color: Color(0x33000000),
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
         ],
       ),
       child: Row(
         children: [
-          const Icon(Icons.people_alt_rounded, color: Colors.white70, size: 36),
+          const Icon(
+            PhosphorIconsRegular.users,
+            color: Colors.white70,
+            size: 36,
+          ),
           const SizedBox(width: 16),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Tổng khách hàng',
-                  style: TextStyle(color: Colors.white70, fontSize: 13)),
+              const Text(
+                'Tổng khách hàng',
+                style: TextStyle(color: Colors.white70, fontSize: 13),
+              ),
               const SizedBox(height: 4),
               loading
                   ? const SizedBox(
                       width: 24,
                       height: 24,
                       child: CircularProgressIndicator(
-                          color: Colors.white, strokeWidth: 2))
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
                   : Text(
                       '$count',
                       style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold),
+                        color: Colors.white,
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
             ],
           ),
@@ -211,17 +241,23 @@ class _UserTile extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         boxShadow: const [
-          BoxShadow(color: Color(0x0D000000), blurRadius: 8, offset: Offset(0, 2))
+          BoxShadow(
+            color: Color(0x0D000000),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
         ],
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: CircleAvatar(
-          backgroundColor: const Color(0xFF2B678B).withValues(alpha: 0.12),
+          backgroundColor: const Color(0xFF2563EB).withValues(alpha: 0.12),
           child: Text(
             _avatarChar(record),
             style: const TextStyle(
-                color: Color(0xFF2B678B), fontWeight: FontWeight.bold),
+              color: Color(0xFF2563EB),
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
         title: Text(
@@ -244,16 +280,24 @@ class _UserTile extends StatelessWidget {
                 Text(
                   _shortPrice(record.prices),
                   style: const TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF2B678B),
-                      fontWeight: FontWeight.w600),
+                    fontSize: 12,
+                    color: Color(0xFF2563EB),
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: 2),
-                const Text('đ/m²', style: TextStyle(fontSize: 11, color: Colors.black38)),
+                const Text(
+                  'đ/m²',
+                  style: TextStyle(fontSize: 11, color: Colors.black38),
+                ),
               ],
             ),
             IconButton(
-              icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
+              icon: const Icon(
+                PhosphorIconsRegular.trash,
+                color: Colors.red,
+                size: 20,
+              ),
               tooltip: 'Xóa khách hàng',
               onPressed: () => _confirmDelete(context),
             ),
@@ -275,11 +319,13 @@ class _UserTile extends StatelessWidget {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Hủy')),
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Hủy'),
+          ),
           TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Xóa', style: TextStyle(color: Colors.red))),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Xóa', style: TextStyle(color: Colors.red)),
+          ),
         ],
       ),
     );
@@ -288,9 +334,9 @@ class _UserTile extends StatelessWidget {
     if (!context.mounted) return;
     if (success) {
       onPricesSaved();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đã xóa khách hàng')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Đã xóa khách hàng')));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -317,7 +363,9 @@ class _UserTile extends StatelessWidget {
   }
 
   String _fmt(double v) => v.toInt().toString().replaceAllMapped(
-      RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => '.');
+    RegExp(r'\B(?=(\d{3})+(?!\d))'),
+    (_) => '.',
+  );
 
   String _formatDate(String iso) {
     if (iso.isEmpty) return '—';
@@ -336,10 +384,7 @@ class _UserTile extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _PriceEditSheet(
-        record: record,
-        onSaved: onPricesSaved,
-      ),
+      builder: (_) => _PriceEditSheet(record: record, onSaved: onPricesSaved),
     );
   }
 }
@@ -356,7 +401,7 @@ class _PriceEditSheet extends StatefulWidget {
 }
 
 class _PriceEditSheetState extends State<_PriceEditSheet> {
-  static const Color _primary = Color(0xFF2B678B);
+  static const Color _primary = Color(0xFF2563EB);
 
   late final TextEditingController _cSi;
   late final TextEditingController _c1;
@@ -371,7 +416,8 @@ class _PriceEditSheetState extends State<_PriceEditSheet> {
     super.initState();
     final p = widget.record.prices;
     _cSi = TextEditingController(
-        text: p.giaSi != null ? p.giaSi!.toInt().toString() : '');
+      text: p.giaSi != null ? p.giaSi!.toInt().toString() : '',
+    );
     _c1 = TextEditingController(text: p.p1.toInt().toString());
     _c2 = TextEditingController(text: p.p2.toInt().toString());
     _c3 = TextEditingController(text: p.p3.toInt().toString());
@@ -382,7 +428,11 @@ class _PriceEditSheetState extends State<_PriceEditSheet> {
   @override
   void dispose() {
     _cSi.dispose();
-    _c1.dispose(); _c2.dispose(); _c3.dispose(); _c4.dispose(); _c5.dispose();
+    _c1.dispose();
+    _c2.dispose();
+    _c3.dispose();
+    _c4.dispose();
+    _c5.dispose();
     super.dispose();
   }
 
@@ -438,29 +488,41 @@ class _PriceEditSheetState extends State<_PriceEditSheet> {
             // Handle
             Container(
               margin: const EdgeInsets.only(top: 12, bottom: 8),
-              width: 40, height: 4,
+              width: 40,
+              height: 4,
               decoration: BoxDecoration(
-                  color: Colors.black12,
-                  borderRadius: BorderRadius.circular(2)),
+                color: Colors.black12,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
               child: Row(
                 children: [
-                  const Icon(Icons.tune_rounded, color: _primary),
+                  const Icon(
+                    PhosphorIconsRegular.slidersHorizontal,
+                    color: _primary,
+                  ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Cài đặt bảng giá',
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                                color: Color(0xFF1B3A4B))),
-                        Text(widget.record.email,
-                            style: const TextStyle(
-                                fontSize: 12, color: Colors.black45)),
+                        const Text(
+                          'Cài đặt bảng giá',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: Color(0xFF1B3A4B),
+                          ),
+                        ),
+                        Text(
+                          widget.record.email,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.black45,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -479,21 +541,28 @@ class _PriceEditSheetState extends State<_PriceEditSheet> {
                     decoration: BoxDecoration(
                       color: const Color(0xFFE8F4FD),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: _primary.withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: _primary.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Row(
                           children: [
-                            Icon(Icons.sell_rounded, size: 16, color: _primary),
+                            Icon(
+                              PhosphorIconsRegular.tag,
+                              size: 16,
+                              color: _primary,
+                            ),
                             SizedBox(width: 6),
                             Text(
                               'Giá sỉ (ưu tiên cao nhất)',
                               style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                  color: _primary),
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: _primary,
+                              ),
                             ),
                           ],
                         ),
@@ -503,7 +572,11 @@ class _PriceEditSheetState extends State<_PriceEditSheet> {
                           style: TextStyle(fontSize: 11, color: Colors.black54),
                         ),
                         const SizedBox(height: 10),
-                        _priceField('Giá sỉ cố định', _cSi, hint: 'Để trống nếu không áp dụng'),
+                        _priceField(
+                          'Giá sỉ cố định',
+                          _cSi,
+                          hint: 'Để trống nếu không áp dụng',
+                        ),
                       ],
                     ),
                   ),
@@ -527,19 +600,27 @@ class _PriceEditSheetState extends State<_PriceEditSheet> {
                         backgroundColor: _primary,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14)),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                         elevation: 2,
                       ),
                       child: _saving
                           ? const SizedBox(
-                              width: 22, height: 22,
+                              width: 22,
+                              height: 22,
                               child: CircularProgressIndicator(
-                                  color: Colors.white, strokeWidth: 2.5))
-                          : const Text('LƯU BẢNG GIÁ',
+                                color: Colors.white,
+                                strokeWidth: 2.5,
+                              ),
+                            )
+                          : const Text(
+                              'LƯU BẢNG GIÁ',
                               style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
-                                  letterSpacing: 0.5)),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
                     ),
                   ),
                 ],
@@ -557,11 +638,14 @@ class _PriceEditSheetState extends State<_PriceEditSheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label,
-              style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF2B678B))),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF2563EB),
+            ),
+          ),
           const SizedBox(height: 6),
           TextField(
             controller: ctrl,
@@ -573,10 +657,11 @@ class _PriceEditSheetState extends State<_PriceEditSheet> {
               hintText: hint,
               hintStyle: const TextStyle(fontSize: 13, color: Colors.black26),
               suffixText: 'đ/m²',
-              suffixStyle:
-                  const TextStyle(fontSize: 13, color: Colors.black38),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+              suffixStyle: const TextStyle(fontSize: 13, color: Colors.black38),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 13,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: BorderSide.none,

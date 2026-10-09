@@ -1,8 +1,10 @@
+import '../../widgets/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../product_detail/product_detail_page.dart';
 import '../profile/favorite_store.dart';
 import '../../services/storage_rest.dart';
+import '../../widgets/app_ui.dart';
 
 class GalleryPage extends StatefulWidget {
   final String categoryName;
@@ -21,9 +23,6 @@ class GalleryPage extends StatefulWidget {
 }
 
 class _GalleryPageState extends State<GalleryPage> {
-  static const _primary = Color(0xFF2B678B);
-  static const _gradientTop = Color(0xFF5CC1FF);
-
   late Future<List<_StorageItem>> _imagesFuture;
   String _sortOrder = 'default';
 
@@ -51,38 +50,14 @@ class _GalleryPageState extends State<GalleryPage> {
       backgroundColor: theme.scaffoldBackgroundColor,
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) => [
-          SliverAppBar(
-            expandedHeight: 80,
-            floating: true,
-            pinned: true,
-            elevation: 0,
-            flexibleSpace: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [_gradientTop, _primary],
-                ),
-              ),
-              child: FlexibleSpaceBar(
-                titlePadding: const EdgeInsets.only(left: 56, bottom: 14),
-                title: Text(
-                  widget.categoryName,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
-                ),
-              ),
-            ),
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-              onPressed: () => Navigator.pop(context),
-            ),
+          AppSubHeader(
+            title: widget.categoryName,
             actions: [
               PopupMenuButton<String>(
-                icon: const Icon(Icons.sort_rounded, color: Colors.white),
+                icon: Icon(
+                  PhosphorIconsRegular.sortAscending,
+                  color: appTextColor(appIsDark(context)),
+                ),
                 tooltip: 'Sắp xếp',
                 onSelected: (v) => setState(() => _sortOrder = v),
                 itemBuilder: (_) => const [
@@ -91,6 +66,7 @@ class _GalleryPageState extends State<GalleryPage> {
                   PopupMenuItem(value: 'za', child: Text('Tên Z → A')),
                 ],
               ),
+              const SizedBox(width: 4),
             ],
           ),
         ],
@@ -105,10 +81,16 @@ class _GalleryPageState extends State<GalleryPage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                    const Icon(
+                      PhosphorIconsRegular.warningCircle,
+                      size: 48,
+                      color: Colors.red,
+                    ),
                     const SizedBox(height: 12),
-                    Text('Lỗi tải ảnh: ${snapshot.error}',
-                        textAlign: TextAlign.center),
+                    Text(
+                      'Lỗi tải ảnh: ${snapshot.error}',
+                      textAlign: TextAlign.center,
+                    ),
                   ],
                 ),
               );
@@ -120,11 +102,18 @@ class _GalleryPageState extends State<GalleryPage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.image_search,
-                        size: 64, color: Colors.grey.shade400),
+                    Icon(
+                      PhosphorIconsRegular.scan,
+                      size: 64,
+                      color: Colors.grey.shade400,
+                    ),
                     const SizedBox(height: 16),
-                    Text('Chưa có ảnh trong danh mục này',
-                        style: TextStyle(color: emptyDark ? Colors.white54 : Colors.black54)),
+                    Text(
+                      'Chưa có ảnh trong danh mục này',
+                      style: TextStyle(
+                        color: emptyDark ? Colors.white54 : Colors.black54,
+                      ),
+                    ),
                   ],
                 ),
               );
@@ -187,7 +176,7 @@ class _GalleryCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x14000000),
+              color: Color(0x122563EB),
               blurRadius: 10,
               offset: Offset(0, 4),
             ),
@@ -198,21 +187,26 @@ class _GalleryCard extends StatelessWidget {
           children: [
             Expanded(
               child: ClipRRect(
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(16)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(16),
+                ),
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
                     CachedNetworkImage(
                       imageUrl: item.url,
                       fit: BoxFit.cover,
-                      placeholder: (_, _) => const _ShimmerBox(
-                        borderRadius: BorderRadius.zero,
-                      ),
+                      placeholder: (_, _) =>
+                          const _ShimmerBox(borderRadius: BorderRadius.zero),
                       errorWidget: (_, _, _) => Container(
-                        color: isDark ? const Color(0xFF1A2A35) : const Color(0xFFE3F2FD),
-                        child: const Icon(Icons.broken_image,
-                            color: Color(0xFF2B678B), size: 36),
+                        color: isDark
+                            ? const Color(0xFF1E293B)
+                            : const Color(0xFFEFF6FF),
+                        child: const Icon(
+                          PhosphorIconsRegular.imageBroken,
+                          color: Color(0xFF2563EB),
+                          size: 36,
+                        ),
                       ),
                     ),
                     // subtle gradient overlay
@@ -226,10 +220,7 @@ class _GalleryCard extends StatelessWidget {
                           gradient: LinearGradient(
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Color(0x55000000),
-                            ],
+                            colors: [Colors.transparent, Color(0x55000000)],
                           ),
                         ),
                       ),
@@ -262,10 +253,11 @@ class _GalleryCard extends StatelessWidget {
                               ),
                               child: Icon(
                                 isFav
-                                    ? Icons.favorite_rounded
-                                    : Icons.favorite_border_rounded,
-                                color:
-                                    isFav ? Colors.red : Colors.grey.shade500,
+                                    ? PhosphorIconsFill.heart
+                                    : PhosphorIconsRegular.heart,
+                                color: isFav
+                                    ? Colors.red
+                                    : Colors.grey.shade500,
                                 size: 18,
                               ),
                             ),
@@ -287,21 +279,26 @@ class _GalleryCard extends StatelessWidget {
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 12,
-                        color: isDark ? Colors.white70 : const Color(0xFF1B3A4B),
+                        color: isDark ? Colors.white70 : AppColors.ink,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF2B678B).withValues(alpha: 0.1),
+                      color: const Color(0xFF2563EB).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: const Icon(Icons.arrow_forward_ios_rounded,
-                        size: 10, color: Color(0xFF2B678B)),
+                    child: const Icon(
+                      PhosphorIconsRegular.caretRight,
+                      size: 10,
+                      color: Color(0xFF2563EB),
+                    ),
                   ),
                 ],
               ),
@@ -336,8 +333,7 @@ class _SkeletonGrid extends StatelessWidget {
           children: [
             const Expanded(
               child: _ShimmerBox(
-                borderRadius:
-                    BorderRadius.vertical(top: Radius.circular(16)),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
               ),
             ),
             Padding(
@@ -365,11 +361,7 @@ class _ShimmerBox extends StatefulWidget {
   final double? width;
   final BorderRadius borderRadius;
 
-  const _ShimmerBox({
-    this.height,
-    this.width,
-    required this.borderRadius,
-  });
+  const _ShimmerBox({this.height, this.width, required this.borderRadius});
 
   @override
   State<_ShimmerBox> createState() => _ShimmerBoxState();
@@ -387,9 +379,10 @@ class _ShimmerBoxState extends State<_ShimmerBox>
       vsync: this,
       duration: const Duration(milliseconds: 1000),
     )..repeat(reverse: true);
-    _anim = Tween<double>(begin: 0.35, end: 0.75).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
-    );
+    _anim = Tween<double>(
+      begin: 0.35,
+      end: 0.75,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
   }
 
   @override
