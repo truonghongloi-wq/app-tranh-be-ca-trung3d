@@ -294,18 +294,20 @@ class ProfilePage extends StatelessWidget {
                 ),
               ),
             ],
-            divider,
-            _SettingsTile(
-              icon: PhosphorIconsRegular.key,
-              iconColor: appAccentColor(isDark),
-              title: 'Đổi mật khẩu',
-              subtitle: 'Cần nhập mật khẩu hiện tại',
-              onTap: () => showDialog<void>(
-                context: context,
-                barrierDismissible: false,
-                builder: (_) => const _ChangePasswordDialog(),
+            // Tài khoản đăng nhập Google không có mật khẩu để đổi
+            if (AuthService.hasPassword) divider,
+            if (AuthService.hasPassword)
+              _SettingsTile(
+                icon: PhosphorIconsRegular.key,
+                iconColor: appAccentColor(isDark),
+                title: 'Đổi mật khẩu',
+                subtitle: 'Cần nhập mật khẩu hiện tại',
+                onTap: () => showDialog<void>(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (_) => const _ChangePasswordDialog(),
+                ),
               ),
-            ),
             divider,
             _SettingsTile(
               icon: PhosphorIconsRegular.signOut,
@@ -354,6 +356,8 @@ class ProfilePage extends StatelessWidget {
   }
 
   Future<void> _showDeleteAccountDialog(BuildContext context) async {
+    // Tài khoản Google không có mật khẩu: xác nhận bằng cách chọn lại Google
+    final needsPassword = AuthService.hasPassword;
     final passwordController = TextEditingController();
     bool obscure = true;
     bool loading = false;
@@ -381,34 +385,57 @@ class ProfilePage extends StatelessWidget {
                       style: TextStyle(fontSize: 13, height: 1.4),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
-                      'Nhập mật khẩu để xác nhận:',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: passwordController,
-                      obscureText: obscure,
-                      enabled: !loading,
-                      autofocus: true,
-                      decoration: InputDecoration(
-                        hintText: 'Mật khẩu',
-                        border: const OutlineInputBorder(),
-                        errorText: errorText,
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            obscure
-                                ? PhosphorIconsRegular.eyeSlash
-                                : PhosphorIconsRegular.eye,
-                          ),
-                          onPressed: () => setState(() => obscure = !obscure),
+                    if (!needsPassword) ...[
+                      Text(
+                        'Bấm "Xóa tài khoản" rồi xác nhận lại bằng '
+                        '${AuthService.isAppleUser ? 'Apple ID' : 'tài khoản Google'} '
+                        'của bạn.',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                      onSubmitted: (_) {},
-                    ),
+                      if (errorText != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          errorText!,
+                          style: const TextStyle(
+                            color: Colors.red,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ],
+                    if (needsPassword) ...[
+                      const Text(
+                        'Nhập mật khẩu để xác nhận:',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: passwordController,
+                        obscureText: obscure,
+                        enabled: !loading,
+                        autofocus: true,
+                        decoration: InputDecoration(
+                          hintText: 'Mật khẩu',
+                          border: const OutlineInputBorder(),
+                          errorText: errorText,
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              obscure
+                                  ? PhosphorIconsRegular.eyeSlash
+                                  : PhosphorIconsRegular.eye,
+                            ),
+                            onPressed: () => setState(() => obscure = !obscure),
+                          ),
+                        ),
+                        onSubmitted: (_) {},
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -424,7 +451,7 @@ class ProfilePage extends StatelessWidget {
                       ? null
                       : () async {
                           final password = passwordController.text;
-                          if (password.isEmpty) {
+                          if (needsPassword && password.isEmpty) {
                             setState(
                               () => errorText = 'Vui lòng nhập mật khẩu.',
                             );
@@ -435,7 +462,7 @@ class ProfilePage extends StatelessWidget {
                             errorText = null;
                           });
                           final error = await AuthService.deleteAccount(
-                            password: password,
+                            password: needsPassword ? password : null,
                           );
                           if (error != null) {
                             setState(() {

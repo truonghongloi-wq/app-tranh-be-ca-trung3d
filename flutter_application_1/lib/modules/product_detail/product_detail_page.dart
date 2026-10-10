@@ -2,11 +2,13 @@ import '../../widgets/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../app_globals.dart';
+import '../../services/painting_search_service.dart';
 import '../../services/user_service.dart';
 import '../composite/composite_screen.dart';
 import '../order/order_confirmation_page.dart';
 import '../order/order_history_page.dart';
 import '../order/order_store.dart';
+import '../search/tag_editor_dialog.dart';
 import '../../widgets/app_ui.dart';
 
 class ProductDetailPage extends StatefulWidget {
@@ -38,6 +40,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   };
 
   PriceConfig _priceConfig = PriceConfig.defaults;
+  bool _isAdmin = false;
 
   late double chieuDai;
   late double chieuCao;
@@ -72,6 +75,35 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     UserService.loadCurrentUserPrices().then((cfg) {
       if (mounted) setState(() => _priceConfig = cfg);
     });
+    UserService.isCurrentUserAdmin().then((v) {
+      if (mounted) setState(() => _isAdmin = v);
+    });
+  }
+
+  // Admin gắn từ khóa tìm kiếm cho tranh (vd: tranh mới upload chưa có)
+  Future<void> _editSearchTags() async {
+    final url = widget.imageUrl;
+    if (url == null) return;
+    try {
+      await PaintingSearchService.catalog();
+    } catch (_) {}
+    if (!mounted) return;
+    final code = PaintingSearchService.codeOf(widget.imageId);
+    final saved = await showTagEditorDialog(
+      context,
+      PaintingEntry(
+        fileName: widget.imageId,
+        url: url,
+        category: '',
+        code: code,
+        tags: PaintingSearchService.tagsOf(code),
+      ),
+    );
+    if (saved == true && mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Đã lưu từ khóa tìm kiếm')));
+    }
   }
 
   @override
@@ -100,18 +132,94 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     }
   }
 
-  bool get _hasDims => chieuDai > 0 && chieuRong > 0 && chieuCao > 0;
+  // Giới hạn kích thước bể (cm): (nhỏ nhất, lớn nhất)
+  static const Map<String, (int, int)> _dimLimits = {
+    'Dài': (30, 1000),
+    'Rộng': (20, 150),
+    'Cao': (20, 150),
+  };
 
+  double _dimValue(String label) => switch (label) {
+    'Dài' => chieuDai,
+    'Rộng' => chieuRong,
+    _ => chieuCao,
+  };
+
+  // Lỗi của 1 ô kích thước; ô trống chỉ báo lỗi sau khi khách bấm đặt hàng
+  String? _dimError(String label) {
+    final v = _dimValue(label);
+    final (min, max) = _dimLimits[label]!;
+    if (v <= 0) return _showDimErrors ? '$label: chưa nhập' : null;
+    if (v < min || v > max) return '$label phải từ $min đến $max cm';
+    return null;
+  }
+
+  bool get _hasDims => _dimLimits.keys.every((label) {
+    final v = _dimValue(label);
+    final (min, max) = _dimLimits[label]!;
+    return v >= min && v <= max;
+  });
+
+  bool _dimDialogOpen = false;
+
+  // Chặn mọi bước sau (chọn mặt in, số bộ, xem thử, giỏ hàng, đặt hàng) khi
+  // kích thước chưa nhập đủ hoặc ngoài giới hạn: hiện hộp thông báo lỗi.
   bool _validateDims() {
     if (_hasDims) return true;
     setState(() => _showDimErrors = true);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Vui lòng nhập đủ kích thước bể (dài, rộng, cao)'),
-        behavior: SnackBarBehavior.floating,
+    _showDimDialog();
+    return false;
+  }
+
+  Future<void> _showDimDialog() async {
+    if (_dimDialogOpen) return;
+    _dimDialogOpen = true;
+    FocusScope.of(context).unfocus();
+    final errors = _dimLimits.keys.map(_dimError).whereType<String>().toList();
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        icon: Icon(
+          PhosphorIconsRegular.warningCircle,
+          color: Colors.red.shade400,
+          size: 40,
+        ),
+        title: const Text('Kích thước bể chưa hợp lệ'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (final e in errors)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  '• $e',
+                  style: TextStyle(
+                    color: Colors.red.shade400,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            const SizedBox(height: 8),
+            const Text(
+              'Kích thước cho phép:\n'
+              '• Dài: 30 – 1000 cm\n'
+              '• Rộng: 20 – 150 cm\n'
+              '• Cao: 20 – 150 cm\n\n'
+              'Vui lòng sửa lại kích thước trước khi tiếp tục.',
+              style: TextStyle(height: 1.5),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Sửa kích thước'),
+          ),
+        ],
       ),
     );
-    return false;
+    _dimDialogOpen = false;
   }
 
   int get soTamTichChon =>
@@ -199,7 +307,17 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   }
 
   Widget _buildAppBar(BuildContext context) {
-    return const AppSubHeader(title: 'Cấu hình tranh');
+    return AppSubHeader(
+      title: 'Cấu hình tranh',
+      actions: [
+        if (_isAdmin && widget.imageUrl != null)
+          IconButton(
+            tooltip: 'Từ khóa tìm kiếm',
+            icon: const Icon(PhosphorIconsRegular.tag),
+            onPressed: _editSearchTags,
+          ),
+      ],
+    );
   }
 
   Widget _buildPreviewCard() {
@@ -422,34 +540,59 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   }
 
   Widget _buildDimensionInputs() {
-    return Row(
+    final errors = _dimLimits.keys.map(_dimError).whereType<String>().toList();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: _dimField(
-            label: 'Dài',
-            controller: _daiController,
-            onChanged: (v) =>
-                setState(() => chieuDai = double.tryParse(v) ?? 0),
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: _dimField(
+                label: 'Dài',
+                controller: _daiController,
+                onChanged: (v) =>
+                    setState(() => chieuDai = double.tryParse(v) ?? 0),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _dimField(
+                label: 'Rộng',
+                controller: _rongController,
+                onChanged: (v) =>
+                    setState(() => chieuRong = double.tryParse(v) ?? 0),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _dimField(
+                label: 'Cao',
+                controller: _caoController,
+                onChanged: (v) =>
+                    setState(() => chieuCao = double.tryParse(v) ?? 0),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _dimField(
-            label: 'Rộng',
-            controller: _rongController,
-            onChanged: (v) =>
-                setState(() => chieuRong = double.tryParse(v) ?? 0),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _dimField(
-            label: 'Cao',
-            controller: _caoController,
-            onChanged: (v) =>
-                setState(() => chieuCao = double.tryParse(v) ?? 0),
-          ),
-        ),
+        const SizedBox(height: 8),
+        if (errors.isEmpty)
+          Text(
+            'Dài 30–1000 cm · Rộng 20–150 cm · Cao 20–150 cm',
+            style: TextStyle(
+              fontSize: 12,
+              color: isDark ? Colors.white54 : Colors.black45,
+            ),
+          )
+        else
+          for (final e in errors)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 2),
+              child: Text(
+                e,
+                style: TextStyle(fontSize: 12, color: Colors.red.shade400),
+              ),
+            ),
       ],
     );
   }
@@ -475,7 +618,10 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         TextField(
           controller: controller,
           keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(4),
+          ],
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 15,
@@ -495,8 +641,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                 : const Color(0xFFF4F7F9),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide:
-                  _showDimErrors && (double.tryParse(controller.text) ?? 0) <= 0
+              borderSide: _dimError(label) != null
                   ? BorderSide(color: Colors.red.shade400, width: 1.5)
                   : BorderSide.none,
             ),
@@ -518,6 +663,12 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             ),
           ),
           onChanged: onChanged,
+          textInputAction: TextInputAction.next,
+          // Nhập xong mà ngoài giới hạn thì báo ngay
+          onSubmitted: (_) {
+            final v = double.tryParse(controller.text) ?? 0;
+            if (v > 0 && _dimError(label) != null) _showDimDialog();
+          },
         ),
       ],
     );
@@ -532,9 +683,12 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           padding: const EdgeInsets.only(bottom: 10),
           child: InkWell(
             borderRadius: BorderRadius.circular(14),
-            onTap: () => setState(() {
-              selectedFacesData[faceName] = isSelected ? null : chatLieu;
-            }),
+            onTap: () {
+              if (!_validateDims()) return;
+              setState(() {
+                selectedFacesData[faceName] = isSelected ? null : chatLieu;
+              });
+            },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -597,10 +751,13 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                             (v) => DropdownMenuItem(value: v, child: Text(v)),
                           )
                           .toList(),
-                      onChanged: (newVal) => setState(() {
-                        selectedFacesData[faceName] = newVal;
-                        if (newVal != null) chatLieu = newVal;
-                      }),
+                      onChanged: (newVal) {
+                        if (!_validateDims()) return;
+                        setState(() {
+                          selectedFacesData[faceName] = newVal;
+                          if (newVal != null) chatLieu = newVal;
+                        });
+                      },
                     ),
                 ],
               ),
@@ -629,7 +786,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         _QtyButton(
           icon: PhosphorIconsRegular.minus,
           onTap: () {
-            if (soLuongSi <= 1) return;
+            if (!_validateDims() || soLuongSi <= 1) return;
             setState(() {
               soLuongSi--;
               _soLuongController.text = soLuongSi.toString();
@@ -640,6 +797,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           width: 52,
           child: TextField(
             controller: _soLuongController,
+            // Chưa nhập kích thước hợp lệ thì không cho sửa số bộ
+            readOnly: !_hasDims,
+            onTap: () => _validateDims(),
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             textAlign: TextAlign.center,
@@ -674,6 +834,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         _QtyButton(
           icon: PhosphorIconsRegular.plus,
           onTap: () {
+            if (!_validateDims()) return;
             setState(() {
               soLuongSi++;
               _soLuongController.text = soLuongSi.toString();
@@ -778,7 +939,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Nhập đủ kích thước bể (dài, rộng, cao) để xem giá',
+                      'Nhập đủ kích thước bể hợp lệ (dài, rộng, cao) để xem giá',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 13,

@@ -147,6 +147,26 @@ class _GalleryPageState extends State<GalleryPage> {
   }
 }
 
+/// Thẻ tranh (ảnh + yêu thích + mở chi tiết), dùng chung cho trang tìm kiếm.
+class PaintingCard extends StatelessWidget {
+  final String name;
+  final String url;
+  final String selectedSize;
+
+  const PaintingCard({
+    super.key,
+    required this.name,
+    required this.url,
+    required this.selectedSize,
+  });
+
+  @override
+  Widget build(BuildContext context) => _GalleryCard(
+    item: _StorageItem(name: name, url: url),
+    selectedSize: selectedSize,
+  );
+}
+
 class _GalleryCard extends StatelessWidget {
   final _StorageItem item;
   final String selectedSize;

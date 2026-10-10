@@ -152,6 +152,9 @@ double similarity        // 0.0–1.0
 4. **Slider tự động** — Trang chủ xoay ảnh mới mỗi 3 giây
 5. **Thông báo Telegram** — Gửi tin nhắn khi đặt hàng thành công
 6. **Cache Storage** — `StorageRest` cache danh sách file để tránh gọi API lặp lại
+7. **Tìm kiếm theo từ khóa** — `PaintingSearchService`: từ khóa mỗi tranh ở RTDB `painting_tags/{mã tranh}` (chuỗi "hoa sen, hồ nước"), dự phòng `assets/data/painting_tags.json`; so khớp không dấu, gợi ý "hoa" → "hoa sen". Admin sửa từ khóa bằng nút 🏷 ở trang chi tiết tranh hoặc nhấn giữ tranh trong kết quả tìm
+8. **Đăng nhập Google** — `AuthService.signInWithGoogle()` (google_sign_in 6.x); tài khoản Google không có mật khẩu → ẩn "Đổi mật khẩu", xóa tài khoản xác nhận bằng chọn lại Google
+9. **Đăng nhập Apple** (chỉ hiện trên iOS) — `AuthService.signInWithApple()` qua `AppleAuthProvider` của firebase_auth; xóa tài khoản Apple sẽ thu hồi token (`revokeTokenWithAuthorizationCode`); entitlement ở `ios/Runner/Runner.entitlements`
 
 ---
 
@@ -217,4 +220,5 @@ flutter build apk --release
 - **AR plugin** (`ar_flutter_plugin`) yêu cầu device hỗ trợ ARCore/ARKit
 - **OrderStore** là singleton toàn cục — không persist qua restart app
 - **Giá mặc định:** 300.000 VND/m²
+- **Giới hạn kích thước bể (cm):** Dài 30–1000, Rộng 20–150, Cao 20–150 (`_dimLimits` trong product_detail_page.dart); sai kích thước thì hiện hộp thông báo và chặn chọn mặt in/số bộ/xem thử/giỏ/đặt hàng
 - Assets: `assets/icons/trung_logo.png`

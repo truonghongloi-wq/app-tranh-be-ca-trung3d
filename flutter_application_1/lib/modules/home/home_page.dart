@@ -4,12 +4,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../widgets/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../services/painting_search_service.dart';
 import '../../services/storage_rest.dart';
 import '../../widgets/app_ui.dart';
 import '../gallery/gallery_page.dart';
 import '../order/order_history_page.dart';
 import '../order/order_store.dart';
 import '../product_detail/widgets/new_paintings_page.dart';
+import '../search/search_suggestions.dart';
 
 // Màu dùng chung (lib/widgets/app_ui.dart)
 const _kBlue = AppColors.blue;
@@ -42,6 +44,8 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   List<_FbCategory> _categories = [];
   List<String> _sliderUrls = [];
+  // Toàn bộ tranh + từ khóa, tải nền để gợi ý ngay khi khách gõ tìm kiếm
+  List<PaintingEntry> _searchCatalog = const [];
   bool _loadingData = true;
 
   String selectedSize = "60x30";
@@ -56,6 +60,9 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _loadFirebaseData();
+    PaintingSearchService.catalog().then((list) {
+      if (mounted) setState(() => _searchCatalog = list);
+    }, onError: (_) {});
   }
 
   @override
@@ -154,10 +161,10 @@ class _HomePageState extends State<HomePage> {
   }
 
   List<_FbCategory> get _filteredCategories {
-    final query = searchQuery.trim().toLowerCase();
+    final query = PaintingSearchService.normalize(searchQuery);
     if (query.isEmpty) return _categories;
     return _categories
-        .where((c) => c.name.toLowerCase().contains(query))
+        .where((c) => PaintingSearchService.normalize(c.name).contains(query))
         .toList();
   }
 
@@ -247,7 +254,11 @@ class _HomePageState extends State<HomePage> {
                     padding: const EdgeInsets.all(24),
                     child: Center(
                       child: Text(
-                        'Không tìm thấy chủ đề phù hợp.',
+                        searchQuery.trim().isEmpty
+                            ? 'Không tìm thấy chủ đề phù hợp.'
+                            : 'Không có chủ đề trùng tên — xem tranh gợi ý '
+                                  'ở ô tìm kiếm phía trên.',
+                        textAlign: TextAlign.center,
                         style: TextStyle(color: _mutedColor),
                       ),
                     ),
@@ -507,7 +518,7 @@ class _HomePageState extends State<HomePage> {
                     onSubmitted: _navigateToMatch,
                     textInputAction: TextInputAction.search,
                     decoration: InputDecoration(
-                      hintText: 'Tìm mã tranh hoặc chủ đề...',
+                      hintText: 'Tìm tranh: hoa sen, mặt trăng, mã tranh...',
                       hintStyle: TextStyle(color: _mutedColor, fontSize: 14),
                       prefixIcon: IconButton(
                         icon: Icon(
@@ -548,82 +559,79 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
         ),
-        if (searchQuery.isNotEmpty && _filteredCategories.isNotEmpty)
-          Container(
-            margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            decoration: BoxDecoration(
-              color: theme.cardColor,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: _softShadow,
-            ),
-            child: Column(
-              children: _filteredCategories
-                  .take(3)
-                  .map(
-                    (cat) => ListTile(
-                      dense: true,
-                      leading: cat.thumbnailUrl != null
-                          ? ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: CachedNetworkImage(
-                                imageUrl: cat.thumbnailUrl!,
-                                width: 36,
-                                height: 36,
-                                fit: BoxFit.cover,
-                                errorWidget: (ctx, url, err) => const Icon(
-                                  PhosphorIconsRegular.image,
-                                  size: 20,
-                                ),
+        if (searchQuery.trim().isNotEmpty)
+          SearchSuggestionsPanel(
+            query: searchQuery,
+            catalog: _searchCatalog,
+            selectedSize: selectedSize,
+            leading: [
+              for (final cat in _filteredCategories.take(2))
+                ListTile(
+                  dense: true,
+                  leading: SizedBox(
+                    width: 36,
+                    height: 36,
+                    child: cat.thumbnailUrl != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: CachedNetworkImage(
+                              imageUrl: cat.thumbnailUrl!,
+                              fit: BoxFit.cover,
+                              errorWidget: (ctx, url, err) => const Icon(
+                                PhosphorIconsRegular.image,
+                                size: 20,
                               ),
-                            )
-                          : const Icon(
-                              PhosphorIconsRegular.image,
-                              size: 20,
-                              color: _kBlue,
                             ),
-                      title: Text(cat.name),
-                      trailing: Icon(
-                        PhosphorIconsRegular.arrowUpLeft,
-                        size: 16,
-                        color: _mutedColor,
-                      ),
-                      onTap: () => _navigateToMatch(cat.name),
-                    ),
-                  )
-                  .toList(),
-            ),
+                          )
+                        : const Icon(
+                            PhosphorIconsRegular.image,
+                            size: 20,
+                            color: _kBlue,
+                          ),
+                  ),
+                  title: Text(cat.name),
+                  subtitle: Text(
+                    'Chủ đề',
+                    style: TextStyle(fontSize: 12, color: _mutedColor),
+                  ),
+                  trailing: Icon(
+                    PhosphorIconsRegular.arrowUpLeft,
+                    size: 16,
+                    color: _mutedColor,
+                  ),
+                  onTap: () => _openCategory(cat),
+                ),
+            ],
           ),
       ],
     );
   }
 
-  void _navigateToMatch(String query) {
-    if (query.isEmpty) return;
-    final match = _categories.firstWhere(
-      (c) => c.name.toLowerCase().contains(query.toLowerCase()),
-      orElse: () => const _FbCategory(name: '', folderPath: ''),
+  void _openCategory(_FbCategory cat) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => GalleryPage(
+          categoryName: cat.name,
+          folderPath: cat.folderPath,
+          selectedSize: selectedSize,
+        ),
+      ),
     );
-    if (match.name.isNotEmpty) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => GalleryPage(
-            categoryName: match.name,
-            folderPath: match.folderPath,
-            selectedSize: selectedSize,
-          ),
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Không tìm thấy chủ đề phù hợp, hãy xem gợi ý bên dưới.',
-          ),
-        ),
-      );
+  }
+
+  // Bấm tìm: trùng hẳn tên chủ đề thì mở chủ đề, còn lại mở trang kết quả
+  // tìm tranh theo từ khóa/mã tranh.
+  void _navigateToMatch(String query) {
+    final q = PaintingSearchService.normalize(query);
+    if (q.isEmpty) return;
+    for (final c in _categories) {
+      if (PaintingSearchService.normalize(c.name) == q) {
+        _openCategory(c);
+        return;
+      }
     }
+    openSearchResults(context, query, selectedSize: selectedSize);
   }
 
   Widget _buildSectionTitle(String title, {String? badge, Widget? trailing}) {

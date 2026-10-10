@@ -83,5 +83,16 @@
 	<array>
 		<string>arkit</string>
 	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.963357026859-6h4ifbl4pjh7f42got3q8qa8c7jmnddb</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

@@ -62,6 +62,25 @@
       }
     },
 
+    "settings": {
+      ".read": "auth != null",
+      ".write": "root.child('users').child(auth.uid).child('role').val() === 'admin'",
+      "prices": {
+        "$tier": {
+          ".validate": "$tier.matches(/^p[1-5]$/) && newData.isNumber() && newData.val() > 0 && newData.val() < 100000000"
+        }
+      },
+      "$other": { ".validate": false }
+    },
+
+    "painting_tags": {
+      ".read": true,
+      ".write": "root.child('users').child(auth.uid).child('role').val() === 'admin'",
+      "$code": {
+        ".validate": "newData.isString() && newData.val().length <= 500"
+      }
+    },
+
     "_zalo_oa": {
       ".read": false,
       ".write": false

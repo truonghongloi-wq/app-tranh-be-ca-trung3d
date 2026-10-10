@@ -1,6 +1,8 @@
+import 'dart:math' as math;
 import 'dart:ui';
 
 import '../../widgets/app_icons.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../widgets/video_background.dart';
 import '../../services/auth_service.dart';
@@ -20,6 +22,13 @@ class _LoginPageState extends State<LoginPage>
   final _passwordCtrl = TextEditingController();
 
   bool _loading = false;
+  bool _googleLoading = false;
+  bool _appleLoading = false;
+
+  bool get _busy => _loading || _googleLoading || _appleLoading;
+
+  // Đăng nhập Apple chỉ hiện trên iPhone/iPad (Apple yêu cầu khi có Google)
+  bool get _showApple => !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
   bool _obscurePassword = true;
   String? _errorMessage;
 
@@ -65,6 +74,36 @@ class _LoginPageState extends State<LoginPage>
     if (!mounted) return;
     setState(() {
       _loading = false;
+      _errorMessage = error;
+    });
+  }
+
+  Future<void> _handleGoogleLogin() async {
+    setState(() {
+      _googleLoading = true;
+      _errorMessage = null;
+    });
+
+    final error = await AuthService.signInWithGoogle();
+
+    if (!mounted) return;
+    setState(() {
+      _googleLoading = false;
+      _errorMessage = error;
+    });
+  }
+
+  Future<void> _handleAppleLogin() async {
+    setState(() {
+      _appleLoading = true;
+      _errorMessage = null;
+    });
+
+    final error = await AuthService.signInWithApple();
+
+    if (!mounted) return;
+    setState(() {
+      _appleLoading = false;
       _errorMessage = error;
     });
   }
@@ -432,7 +471,7 @@ class _LoginPageState extends State<LoginPage>
                 SizedBox(
                   height: 50,
                   child: ElevatedButton(
-                    onPressed: _loading ? null : _handleLogin,
+                    onPressed: _busy ? null : _handleLogin,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF2563EB),
                       foregroundColor: Colors.white,
@@ -463,6 +502,14 @@ class _LoginPageState extends State<LoginPage>
                           ),
                   ),
                 ),
+                const SizedBox(height: 18),
+                _buildOrDivider(),
+                const SizedBox(height: 18),
+                if (_showApple) ...[
+                  _buildAppleButton(),
+                  const SizedBox(height: 12),
+                ],
+                _buildGoogleButton(),
                 const SizedBox(height: 20),
 
                 Row(
@@ -492,6 +539,105 @@ class _LoginPageState extends State<LoginPage>
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildOrDivider() {
+    final line = Expanded(
+      child: Container(height: 1, color: Colors.white.withValues(alpha: 0.28)),
+    );
+    return Row(
+      children: [
+        line,
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 12),
+          child: Text(
+            'hoặc',
+            style: TextStyle(color: Colors.white70, fontSize: 13),
+          ),
+        ),
+        line,
+      ],
+    );
+  }
+
+  // Nút theo chuẩn Apple: nền đen, logo Apple, chữ trắng
+  Widget _buildAppleButton() {
+    return SizedBox(
+      height: 50,
+      child: ElevatedButton(
+        onPressed: _busy ? null : _handleAppleLogin,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.black,
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: Colors.black.withValues(alpha: 0.6),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+        child: _appleLoading
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2.5,
+                ),
+              )
+            : const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.apple, size: 24),
+                  SizedBox(width: 10),
+                  Text(
+                    'Đăng nhập với Apple',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildGoogleButton() {
+    return SizedBox(
+      height: 50,
+      child: OutlinedButton(
+        onPressed: _busy ? null : _handleGoogleLogin,
+        style: OutlinedButton.styleFrom(
+          backgroundColor: Colors.white,
+          foregroundColor: const Color(0xFF1F1F1F),
+          disabledBackgroundColor: Colors.white.withValues(alpha: 0.6),
+          side: BorderSide.none,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+        child: _googleLoading
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  color: Color(0xFF2563EB),
+                  strokeWidth: 2.5,
+                ),
+              )
+            : const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CustomPaint(painter: _GoogleLogoPainter()),
+                  ),
+                  SizedBox(width: 12),
+                  Text(
+                    'Đăng nhập với Google',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
       ),
     );
   }
@@ -541,4 +687,68 @@ class _LoginPageState extends State<LoginPage>
       ),
     );
   }
+}
+
+// Logo chữ "G" 4 màu của Google, vẽ bằng Canvas để không cần thêm file ảnh.
+class _GoogleLogoPainter extends CustomPainter {
+  const _GoogleLogoPainter();
+
+  static double _rad(double deg) => deg * math.pi / 180;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final stroke = size.width * 0.2;
+    final rect = Rect.fromLTWH(
+      stroke / 2,
+      stroke / 2,
+      size.width - stroke,
+      size.height - stroke,
+    );
+    Paint arc(Color c) => Paint()
+      ..color = c
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke;
+
+    canvas.drawArc(
+      rect,
+      _rad(-160),
+      _rad(120),
+      false,
+      arc(const Color(0xFFEA4335)),
+    );
+    canvas.drawArc(
+      rect,
+      _rad(145),
+      _rad(55),
+      false,
+      arc(const Color(0xFFFBBC05)),
+    );
+    canvas.drawArc(
+      rect,
+      _rad(40),
+      _rad(105),
+      false,
+      arc(const Color(0xFF34A853)),
+    );
+    canvas.drawArc(
+      rect,
+      _rad(-2),
+      _rad(44),
+      false,
+      arc(const Color(0xFF4285F4)),
+    );
+    // Thanh ngang của chữ G
+    canvas.drawRect(
+      Rect.fromLTWH(
+        size.width / 2,
+        size.height / 2 - stroke / 2,
+        size.width / 2,
+        stroke,
+      ),
+      Paint()..color = const Color(0xFF4285F4),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

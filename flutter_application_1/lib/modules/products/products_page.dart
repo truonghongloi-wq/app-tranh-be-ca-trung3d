@@ -1,9 +1,11 @@
 import '../../widgets/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../services/painting_search_service.dart';
 import '../../services/storage_rest.dart';
 import '../../widgets/app_ui.dart';
 import '../gallery/gallery_page.dart';
+import '../search/search_suggestions.dart';
 
 class _Category {
   final String name;
@@ -26,6 +28,7 @@ class ProductsPage extends StatefulWidget {
 class _ProductsPageState extends State<ProductsPage> {
   List<_Category> _categories = [];
   bool _loading = true;
+  List<PaintingEntry> _searchCatalog = const [];
   String _search = '';
   final TextEditingController _searchCtrl = TextEditingController();
 
@@ -33,6 +36,9 @@ class _ProductsPageState extends State<ProductsPage> {
   void initState() {
     super.initState();
     _load();
+    PaintingSearchService.catalog().then((list) {
+      if (mounted) setState(() => _searchCatalog = list);
+    }, onError: (_) {});
   }
 
   @override
@@ -70,9 +76,11 @@ class _ProductsPageState extends State<ProductsPage> {
   }
 
   List<_Category> get _filtered {
-    final q = _search.trim().toLowerCase();
+    final q = PaintingSearchService.normalize(_search);
     if (q.isEmpty) return _categories;
-    return _categories.where((c) => c.name.toLowerCase().contains(q)).toList();
+    return _categories
+        .where((c) => PaintingSearchService.normalize(c.name).contains(q))
+        .toList();
   }
 
   @override
@@ -88,6 +96,13 @@ class _ProductsPageState extends State<ProductsPage> {
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
             sliver: SliverToBoxAdapter(child: _buildSearchBar(isDark)),
           ),
+          if (_search.trim().isNotEmpty)
+            SliverToBoxAdapter(
+              child: SearchSuggestionsPanel(
+                query: _search,
+                catalog: _searchCatalog,
+              ),
+            ),
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             sliver: SliverToBoxAdapter(
@@ -151,9 +166,10 @@ class _ProductsPageState extends State<ProductsPage> {
       child: TextField(
         controller: _searchCtrl,
         onChanged: (v) => setState(() => _search = v),
+        onSubmitted: (v) => openSearchResults(context, v),
         textInputAction: TextInputAction.search,
         decoration: InputDecoration(
-          hintText: 'Tìm chủ đề tranh...',
+          hintText: 'Tìm chủ đề, từ khóa: hoa sen, mặt trăng...',
           hintStyle: TextStyle(color: appMutedColor(isDark), fontSize: 14),
           prefixIcon: Icon(
             PhosphorIconsRegular.magnifyingGlass,
