@@ -15,6 +15,30 @@
       },
       "oauth_client": [
         {
+          "client_id": "963357026859-dtp7u0epnhhcdqhlj46apfunf1mdf5rf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "trung3d.apptranhbeca",
+            "certificate_hash": "52fcee1489c25d38f39f00d078e8c59a5487e7f2"
+          }
+        },
+        {
+          "client_id": "963357026859-foqk8fh4u0l1h6qgd42s8bu2rneqaris.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "trung3d.apptranhbeca",
+            "certificate_hash": "965e0716142ccfe379943a3283415e159ac3342c"
+          }
+        },
+        {
+          "client_id": "963357026859-u413dhnvce1evtasuit52b7b9aqv02re.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "trung3d.apptranhbeca",
+            "certificate_hash": "ff6d4c278623344856c03667ef3e5cfc9021b23f"
+          }
+        },
+        {
           "client_id": "963357026859-kik5684ndjmp4n6do3heoa480drg9mnb.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -30,6 +54,13 @@
             {
               "client_id": "963357026859-kik5684ndjmp4n6do3heoa480drg9mnb.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "963357026859-6h4ifbl4pjh7f42got3q8qa8c7jmnddb.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "trung3d.apptranhbeca"
+              }
             }
           ]
         }
