@@ -3,292 +3,618 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Dashboard Admin – Apptranhbeca</title>
+  <title>Dashboard Admin – Tranh Beca</title>
+  <link rel="icon" href="logo.png" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Bảng màu & cỡ chữ lấy từ thiết kế Stitch "Minimalist Modern Dashboard Redesign"
+    tailwind.config = {
+      theme: { extend: {
+        colors: {
+          "primary": "#303e51", "primary-container": "#475569", "on-primary": "#ffffff",
+          "primary-fixed": "#d5e3fc", "on-primary-fixed": "#0d1c2e",
+          "primary-fixed-dim": "#b9c7df", "on-primary-fixed-variant": "#3a485b",
+          "secondary": "#516072", "secondary-container": "#d2e1f7", "on-secondary-container": "#556477",
+          "on-secondary-fixed-variant": "#39485a",
+          "tertiary": "#353d52", "tertiary-fixed": "#dae2fd", "on-tertiary-fixed": "#131b2e",
+          "background": "#f7f9fb", "surface-container-lowest": "#ffffff",
+          "surface-container-low": "#f2f4f6", "surface-container": "#eceef0",
+          "surface-container-high": "#e6e8ea", "surface-container-highest": "#e0e3e5",
+          "on-surface": "#191c1e", "on-surface-variant": "#44474c",
+          "outline": "#75777d", "outline-variant": "#c4c6cd",
+          "error": "#ba1a1a", "error-container": "#ffdad6", "on-error-container": "#93000a",
+          "success": "#1b7f4b", "success-container": "#d7f3e3",
+          "warn": "#8a5a00", "warn-container": "#fdeccb",
+        },
+        fontFamily: { sans: ["Inter", "sans-serif"] },
+        fontSize: {
+          "metric-display": ["1.875rem", { lineHeight: "2.25rem", letterSpacing: "-0.03em", fontWeight: "600" }],
+          "headline-lg": ["1.5rem", { lineHeight: "2rem", letterSpacing: "-0.02em", fontWeight: "600" }],
+          "headline-md": ["1.125rem", { lineHeight: "1.75rem", letterSpacing: "-0.01em", fontWeight: "600" }],
+          "label-md": ["0.875rem", { lineHeight: "1.25rem", fontWeight: "500" }],
+          "label-sm": ["0.75rem", { lineHeight: "1rem", letterSpacing: "0.025em", fontWeight: "500" }],
+          "body-md": ["0.875rem", { lineHeight: "1.375rem" }],
+          "body-sm": ["0.75rem", { lineHeight: "1.125rem" }],
+        },
+      } }
+    };
+  </script>
   <style>
-    :root {
-      --primary: #e65c00;
-      --secondary: #f9a825;
-      --bg: #f5f6fa;
-      --sidebar: #1a1a2e;
-      --card: #ffffff;
-      --text: #333;
-      --muted: #888;
-      --border: #e0e0e0;
-    }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); display: flex; min-height: 100vh; }
-    .sidebar { width: 240px; background: var(--sidebar); color: #fff; display: flex; flex-direction: column; min-height: 100vh; }
-    .sidebar-logo { padding: 24px 20px; font-size: 20px; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.1); background: linear-gradient(135deg, var(--primary), var(--secondary)); }
-    .sidebar-logo span { font-size: 13px; display: block; font-weight: 400; opacity: 0.85; }
-    .sidebar nav { padding: 16px 0; flex: 1; }
-    .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 20px; cursor: pointer; transition: background 0.2s; font-size: 14px; border-left: 3px solid transparent; }
-    .nav-item:hover { background: rgba(255,255,255,0.08); }
-    .nav-item.active { background: rgba(230,92,0,0.25); border-left-color: var(--primary); color: var(--secondary); }
-    .sidebar-footer { padding: 16px 20px; font-size: 12px; color: rgba(255,255,255,0.4); border-top: 1px solid rgba(255,255,255,0.1); }
-    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-    .topbar { background: var(--card); border-bottom: 1px solid var(--border); padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; }
-    .topbar h1 { font-size: 20px; font-weight: 600; }
-    .badge { background: var(--primary); color: #fff; padding: 4px 10px; border-radius: 20px; font-size: 12px; }
-    .content { padding: 28px; flex: 1; overflow-y: auto; }
+    body { font-family: 'Inter', sans-serif; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400; vertical-align: middle; }
     .section { display: none; }
     .section.active { display: block; }
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 28px; }
-    .stat-card { background: var(--card); border-radius: 12px; padding: 22px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); display: flex; align-items: center; gap: 16px; }
-    .stat-icon { width: 52px; height: 52px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
-    .stat-info .value { font-size: 26px; font-weight: 700; }
-    .stat-info .label { font-size: 13px; color: var(--muted); margin-top: 2px; }
-    .card { background: var(--card); border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); overflow: hidden; margin-bottom: 24px; }
-    .card-header { padding: 18px 22px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
-    .card-header h2 { font-size: 16px; font-weight: 600; }
-    .search-box { display: flex; align-items: center; gap: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; }
-    .search-box input { border: none; background: transparent; outline: none; font-size: 14px; width: 200px; }
-    table { width: 100%; border-collapse: collapse; }
-    th { background: var(--bg); padding: 12px 16px; text-align: left; font-size: 12px; color: var(--muted); border-bottom: 1px solid var(--border); }
-    td { padding: 13px 16px; border-bottom: 1px solid var(--border); font-size: 14px; }
-    .btn { padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-weight: 500; }
-    .btn-primary { background: var(--primary); color: #fff; }
-    .btn-success { background: #2ecc71; color: #fff; }
-    .btn-info { background: #3498db; color: #fff; }
-    .btn-danger { background: #e74c3c; color: #fff; }
-    .btn-sm { padding: 5px 10px; font-size: 12px; }
-    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 999; align-items: center; justify-content: center; }
+    .nav-item.active { background: #303e51 !important; color: #fff !important; box-shadow: 0 1px 8px rgba(0,0,0,0.04); }
+    .modal-overlay { display: none; }
     .modal-overlay.open { display: flex; }
-    .modal { background: #fff; border-radius: 14px; width: 480px; max-width: 95vw; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
-    .modal-header { padding: 20px 24px; background: linear-gradient(135deg,var(--primary),var(--secondary)); color: #fff; display: flex; justify-content: space-between; align-items: center; }
-    .modal-body { padding: 24px; }
-    .form-group { margin-bottom: 16px; }
-    .form-group label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; color: var(--muted); }
-    .form-group input, .form-group select { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; outline: none; transition: border 0.2s; }
-    .form-group input:focus, .form-group select:focus { border-color: var(--primary); }
-    .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
-    .toast { position: fixed; bottom: 24px; right: 24px; background: #333; color: #fff; padding: 12px 20px; border-radius: 10px; font-size: 14px; z-index: 9999; transform: translateY(100px); transition: transform 0.3s; }
-    .toast.show { transform: translateY(0); }
-    .toast.success { background: #2ecc71; }
-    .toast.error { background: #e74c3c; }
+    .toast { transform: translateY(120px); opacity: 0; pointer-events: none; transition: transform .3s, opacity .3s; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { background: #1b7f4b; }
+    .toast.error { background: #ba1a1a; }
+    .field { width: 100%; padding: .6rem .85rem; border-radius: .5rem; background: #f2f4f6; font-size: .875rem; color: #191c1e; outline: none; border: 1px solid transparent; transition: background .2s, border-color .2s; }
+    .field:focus { background: #fff; border-color: #475569; }
+    .field::placeholder { color: #75777d; }
+    .chart-dot:hover { r: 6; }
   </style>
 </head>
-<body>
+<body class="bg-background text-on-surface antialiased text-body-md">
 
-<div id="login-screen" style="display:flex;align-items:center;justify-content:center;min-height:100vh;width:100%;background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);">
-  <div style="background:#fff;border-radius:18px;padding:40px 36px;width:380px;max-width:92vw;box-shadow:0 20px 60px rgba(0,0,0,0.3);text-align:center;">
-    <div style="width:70px;height:70px;border-radius:16px;background:linear-gradient(135deg,var(--primary),var(--secondary));display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:32px;">🖼️</div>
-    <h2 style="margin-bottom:6px;font-size:22px;color:var(--text);">Tranh Bể Cá 3D</h2>
-    <p style="color:var(--muted);font-size:14px;margin-bottom:28px;">Admin Dashboard</p>
-    <div style="margin-bottom:14px;">
-      <input type="email" id="login-email" placeholder="Email admin..." onkeydown="if(event.key==='Enter')document.getElementById('login-password').focus()" style="width:100%;padding:14px 18px;border:2px solid var(--border);border-radius:12px;font-size:15px;outline:none;transition:border .2s;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'" />
+<!-- ============ ĐĂNG NHẬP ============ -->
+<div id="login-screen" class="min-h-screen w-full flex items-center justify-center bg-surface-container-low px-4">
+  <div class="w-full max-w-sm bg-surface-container-lowest rounded-xl shadow-[0_8px_40px_rgba(0,0,0,0.08)] p-8">
+    <div class="flex flex-col items-center text-center mb-7">
+      <img src="logo.png" alt="Logo" class="w-16 h-16 rounded-xl object-contain bg-surface-container-low p-1.5 mb-4"/>
+      <h2 class="text-headline-lg">Tranh Bể Cá 3D</h2>
+      <p class="text-body-md text-on-surface-variant mt-1">Hệ thống quản trị</p>
     </div>
-    <div style="position:relative;margin-bottom:20px;">
-      <input type="password" id="login-password" placeholder="Nhập mật khẩu..." onkeydown="if(event.key==='Enter')doLogin()" style="width:100%;padding:14px 18px;border:2px solid var(--border);border-radius:12px;font-size:15px;outline:none;transition:border .2s;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'" />
+    <label class="block text-label-sm text-on-surface-variant mb-1.5" for="login-email">Email quản trị</label>
+    <div class="relative mb-4">
+      <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">mail</span>
+      <input type="email" id="login-email" class="field pl-10" placeholder="Email admin..." autocomplete="username"
+        onkeydown="if(event.key==='Enter')document.getElementById('login-password').focus()" />
     </div>
-    <p id="login-error" style="color:#e74c3c;font-size:13px;margin-bottom:14px;display:none;">Sai email hoặc mật khẩu.</p>
-    <button id="login-btn" onclick="doLogin()" style="width:100%;padding:14px;background:linear-gradient(135deg,var(--primary),var(--secondary));color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;transition:opacity .2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Đăng nhập</button>
+    <label class="block text-label-sm text-on-surface-variant mb-1.5" for="login-password">Mật khẩu</label>
+    <div class="relative mb-4">
+      <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">lock</span>
+      <input type="password" id="login-password" class="field pl-10" placeholder="Nhập mật khẩu..." autocomplete="current-password"
+        onkeydown="if(event.key==='Enter')doLogin()" />
+    </div>
+    <p id="login-error" class="hidden text-body-sm text-error bg-error-container/60 rounded-lg px-3 py-2 mb-4">Sai email hoặc mật khẩu.</p>
+    <button id="login-btn" onclick="doLogin()" class="w-full h-11 rounded-lg bg-primary hover:bg-primary-container text-on-primary text-label-md flex items-center justify-center gap-2 transition-colors disabled:opacity-60">
+      <span class="material-symbols-outlined text-[18px]">login</span><span id="login-btn-text">Đăng nhập</span>
+    </button>
   </div>
 </div>
 
-<div id="app-container" style="display:none;min-height:100vh;width:100%;">
-<aside class="sidebar">
-  <div class="sidebar-logo">
-    🖼️ Tranh Beca<br/>
-    <span>Admin Dashboard</span>
-  </div>
-  <nav>
-    <div class="nav-item active" onclick="showSection('overview')">
-      <span>📊</span> Tổng quan
-    </div>
-    <div class="nav-item" onclick="showSection('users')">
-      <span>👥</span> Quản lý User
-    </div>
-    <div class="nav-item" onclick="showSection('revenue')">
-      <span>📈</span> Thống kê doanh thu
-    </div>
-    <div class="nav-item" onclick="showSection('export')">
-      <span>📥</span> Xuất báo cáo
-    </div>
-  </nav>
-  <div class="nav-item" onclick="doLogout()" style="color:#e74c3c;">
-    <span>🚪</span> Đăng xuất
-  </div>
-  <div class="sidebar-footer">Apptranhbeca © 2026</div>
-</aside>
+<!-- ============ ỨNG DỤNG ============ -->
+<div id="app-container" class="hidden">
 
-<div class="main">
-  <div class="topbar">
-    <h1 id="page-title">📊 Tổng quan</h1>
-    <div>
-      <span id="current-time" style="font-size:13px;color:var(--muted);margin-right:16px;"></span>
-      <span class="badge">Admin</span>
-    </div>
-  </div>
+  <!-- Nền mờ khi mở menu trên điện thoại -->
+  <div id="sidebar-backdrop" class="fixed inset-0 bg-black/30 z-40 hidden lg:hidden" onclick="toggleSidebar(false)"></div>
 
-  <div class="content">
-
-    <div class="section active" id="section-overview">
-      <h2 style="margin-bottom:20px;">📊 Tổng quan hệ thống</h2>
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon" style="background:#fff3e0;">👥</div>
-          <div class="stat-info">
-            <div class="value" id="stat-total-users">–</div>
-            <div class="label">Tổng khách hàng</div>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background:#e3f2fd;">💰</div>
-          <div class="stat-info">
-            <div class="value" id="stat-avg-price">–</div>
-            <div class="label">Giá TB/m²</div>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background:#e8f5e9;">📊</div>
-          <div class="stat-info">
-            <div class="value" id="stat-revenue">–</div>
-            <div class="label">Doanh thu ước tính</div>
-          </div>
+  <aside id="sidebar" class="fixed left-0 top-0 h-screen w-64 bg-surface-container-lowest shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-50 flex flex-col justify-between -translate-x-full lg:translate-x-0 transition-transform">
+    <div class="flex flex-col">
+      <div class="px-6 py-5 flex items-center gap-3">
+        <img src="logo.png" alt="" class="w-9 h-9 rounded-xl object-contain bg-surface-container-low p-0.5 shrink-0"/>
+        <div class="flex flex-col min-w-0">
+          <span class="text-headline-md tracking-tight truncate">Tranh Beca</span>
+          <span class="text-label-sm text-on-surface-variant truncate">Hệ thống Quản trị</span>
         </div>
       </div>
-      <div class="card" style="padding:22px;">
-        <h3 style="margin-bottom:16px;">🕒 Khách hàng mới nhất</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Khách hàng</th>
-              <th>Email</th>
-              <th>SĐT</th>
-              <th>Giá/m² (VNĐ)</th>
-              <th>Ngày tham gia</th>
-            </tr>
-          </thead>
-          <tbody id="recent-users-body">
-            <tr><td colspan="5" style="text-align:center;padding:30px;">Đang tải...</td></tr>
-          </tbody>
-        </table>
+      <div class="px-4 py-2">
+        <p class="px-3 pb-2 text-label-sm uppercase tracking-wider text-outline">Menu chính</p>
+        <nav class="flex flex-col gap-1">
+          <a href="#" data-section="overview" class="nav-item active flex items-center gap-3 px-3 py-2.5 rounded-lg text-label-md text-on-surface-variant hover:bg-surface-container-low transition-colors">
+            <span class="material-symbols-outlined text-[20px]">grid_view</span><span>Tổng quan</span></a>
+          <a href="#" data-section="orders" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-label-md text-on-surface-variant hover:bg-surface-container-low transition-colors">
+            <span class="material-symbols-outlined text-[20px]">receipt_long</span><span class="flex-1">Đơn hàng</span>
+            <span id="nav-pending" class="hidden min-w-[20px] h-5 px-1.5 rounded-full bg-warn-container text-warn text-[11px] font-semibold flex items-center justify-center"></span></a>
+          <a href="#" data-section="users" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-label-md text-on-surface-variant hover:bg-surface-container-low transition-colors">
+            <span class="material-symbols-outlined text-[20px]">group</span><span>Quản lý User</span></a>
+          <a href="#" data-section="pricing" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-label-md text-on-surface-variant hover:bg-surface-container-low transition-colors">
+            <span class="material-symbols-outlined text-[20px]">sell</span><span>Bảng giá</span></a>
+          <a href="#" data-section="revenue" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-label-md text-on-surface-variant hover:bg-surface-container-low transition-colors">
+            <span class="material-symbols-outlined text-[20px]">payments</span><span>Thống kê doanh thu</span></a>
+          <a href="#" data-section="export" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-label-md text-on-surface-variant hover:bg-surface-container-low transition-colors">
+            <span class="material-symbols-outlined text-[20px]">export_notes</span><span>Xuất báo cáo</span></a>
+        </nav>
       </div>
     </div>
+    <div class="p-4">
+      <div class="p-3 rounded-xl bg-surface-container-low flex items-center justify-between gap-2">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-on-primary text-[18px]">person</span>
+          </div>
+          <div class="flex flex-col min-w-0">
+            <span id="admin-email" class="text-label-md truncate">Admin</span>
+            <span class="text-label-sm text-on-surface-variant">Quản trị viên</span>
+          </div>
+        </div>
+        <button onclick="doLogout()" title="Đăng xuất" class="p-1.5 rounded-lg text-on-surface-variant hover:bg-error-container hover:text-error transition-colors">
+          <span class="material-symbols-outlined text-[20px]">logout</span>
+        </button>
+      </div>
+      <p class="text-center text-[11px] text-outline mt-3">Apptranhbeca © 2026</p>
+    </div>
+  </aside>
 
-    <div class="section" id="section-users">
-      <div class="card">
-        <div class="card-header">
-          <h2>👥 Danh sách khách hàng</h2>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;">
-            <div class="search-box">
-              🔍 <input type="text" id="search-input" placeholder="Tìm tên, email, SĐT..." oninput="filterUsers()"/>
+  <div class="lg:pl-64">
+    <header class="fixed top-0 left-0 lg:left-64 right-0 h-16 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-30 flex items-center justify-between px-4 sm:px-8 gap-3">
+      <div class="flex items-center gap-3 min-w-0">
+        <button class="lg:hidden p-2 -ml-2 rounded-lg hover:bg-surface-container-low" onclick="toggleSidebar(true)" title="Menu">
+          <span class="material-symbols-outlined">menu</span>
+        </button>
+        <div class="flex items-center gap-2 text-on-surface-variant text-label-sm min-w-0">
+          <span class="material-symbols-outlined text-[16px]">home</span><span>/</span>
+          <span id="page-title" class="text-on-surface text-label-md truncate">Tổng quan</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container text-label-sm text-secondary">
+          <span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span><span id="current-time"></span>
+        </div>
+        <div class="px-2.5 py-1 rounded-full bg-secondary-container text-on-secondary-container text-label-sm flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-[14px]">verified_user</span><span>Admin</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="pt-16 px-4 sm:px-8 min-h-screen">
+      <div class="py-8 pb-12">
+
+        <!-- ============ TỔNG QUAN ============ -->
+        <section class="section active" id="section-overview">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="w-2 h-2 rounded-full bg-primary"></span>
+                <h1 class="text-headline-lg tracking-tight">Tổng quan hệ thống</h1>
+              </div>
+              <p class="text-on-surface-variant">Theo dõi khách hàng và đơn hàng từ app Tranh Bể Cá 3D</p>
             </div>
-            <button class="btn btn-success" onclick="openAddModal()">➕ Thêm KH</button>
-            <button class="btn btn-info" onclick="refreshUsers()">🔄 Tải lại</button>
+            <div class="flex items-center flex-wrap gap-2.5">
+              <button onclick="refreshUsers()" class="h-9 px-3 rounded-lg bg-surface-container-lowest hover:bg-surface-container-low text-label-sm flex items-center gap-1.5 shadow-sm transition-colors">
+                <span class="material-symbols-outlined text-[18px] text-secondary">sync</span><span>Làm mới</span>
+              </button>
+              <button onclick="showSection('export')" class="h-9 px-3.5 rounded-lg bg-primary hover:bg-primary-container text-on-primary text-label-md flex items-center gap-2 shadow-sm transition-colors">
+                <span class="material-symbols-outlined text-[18px]">file_download</span><span>Xuất báo cáo</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Thẻ chỉ số -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
+            <div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm overflow-hidden group hover:shadow-md transition-shadow">
+              <div class="flex items-start justify-between mb-4">
+                <div>
+                  <span class="block text-label-sm text-outline uppercase tracking-wider mb-1">Tổng khách hàng</span>
+                  <div class="flex items-baseline gap-2">
+                    <span id="stat-total-users" class="text-metric-display">–</span>
+                    <span class="text-label-sm text-on-surface-variant">khách</span>
+                  </div>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-surface-container-low flex items-center justify-center text-primary group-hover:bg-secondary-container transition-colors">
+                  <span class="material-symbols-outlined text-[20px]">group</span>
+                </div>
+              </div>
+              <div class="flex items-center gap-1.5 bg-surface-container-low/60 -mx-6 -mb-6 px-6 py-3 text-label-sm text-on-surface-variant">
+                <span class="material-symbols-outlined text-[16px]">smartphone</span>
+                <span id="stat-users-split">–</span>
+              </div>
+            </div>
+
+            <div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm overflow-hidden group hover:shadow-md transition-shadow">
+              <div class="flex items-start justify-between mb-4">
+                <div>
+                  <span class="block text-label-sm text-outline uppercase tracking-wider mb-1">Đơn giá TB/m²</span>
+                  <div class="flex items-baseline gap-1.5">
+                    <span id="stat-avg-price" class="text-metric-display">–</span>
+                    <span class="text-label-sm text-on-surface-variant">₫/m²</span>
+                  </div>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-surface-container-low flex items-center justify-center text-primary group-hover:bg-secondary-container transition-colors">
+                  <span class="material-symbols-outlined text-[20px]">sell</span>
+                </div>
+              </div>
+              <div class="flex items-center gap-1.5 bg-surface-container-low/60 -mx-6 -mb-6 px-6 py-3 text-label-sm text-on-surface-variant">
+                <span class="material-symbols-outlined text-[16px]">straighten</span>
+                <span id="stat-price-range">Khoảng giá: –</span>
+              </div>
+            </div>
+
+            <div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm overflow-hidden group hover:shadow-md transition-shadow">
+              <div class="flex items-start justify-between mb-4">
+                <div class="min-w-0">
+                  <span class="block text-label-sm text-outline uppercase tracking-wider mb-1">Doanh thu đơn hàng</span>
+                  <div class="flex items-baseline gap-1.5">
+                    <span id="stat-revenue" class="text-metric-display truncate">–</span>
+                    <span class="text-label-sm text-on-surface-variant">₫</span>
+                  </div>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-surface-container-low flex items-center justify-center text-primary group-hover:bg-secondary-container transition-colors shrink-0">
+                  <span class="material-symbols-outlined text-[20px]">query_stats</span>
+                </div>
+              </div>
+              <div class="flex items-center gap-1.5 bg-surface-container-low/60 -mx-6 -mb-6 px-6 py-3 text-label-sm text-on-surface-variant">
+                <span class="material-symbols-outlined text-[16px]">calendar_month</span>
+                <span id="stat-revenue-month">Tháng này: –</span>
+              </div>
+            </div>
+
+            <div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm overflow-hidden group hover:shadow-md transition-shadow">
+              <div class="flex items-start justify-between mb-4">
+                <div>
+                  <span class="block text-label-sm text-outline uppercase tracking-wider mb-1">Đơn hàng</span>
+                  <div class="flex items-baseline gap-1.5">
+                    <span id="stat-orders" class="text-metric-display">–</span>
+                    <span class="text-label-sm text-on-surface-variant">đơn</span>
+                  </div>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-surface-container-low flex items-center justify-center text-primary group-hover:bg-secondary-container transition-colors">
+                  <span class="material-symbols-outlined text-[20px]">inventory_2</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between gap-2 bg-surface-container-low/60 -mx-6 -mb-6 px-6 py-3 text-label-sm text-on-surface-variant">
+                <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-warn"></span><span id="stat-orders-pending">– chờ xác nhận</span></span>
+                <span id="stat-orders-done" class="text-[11px]"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Biểu đồ + trạng thái đơn -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div class="lg:col-span-2 bg-surface-container-lowest rounded-xl p-6 shadow-sm">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+                <div>
+                  <h2 class="text-headline-md">Doanh thu &amp; Diện tích 7 ngày qua</h2>
+                  <p class="text-body-sm text-on-surface-variant">Tính trên các đơn chưa hủy, theo ngày đặt hàng</p>
+                </div>
+                <div class="flex items-center gap-4 text-label-sm text-on-surface-variant">
+                  <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-primary"></span>Doanh thu</span>
+                  <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-secondary-container"></span>Diện tích (m²)</span>
+                </div>
+              </div>
+              <div id="chart-summary" class="flex flex-wrap gap-2 mb-4 text-label-sm"></div>
+              <div id="chart" class="relative w-full h-64">
+                <div class="h-full flex items-center justify-center text-outline">Đang tải...</div>
+              </div>
+              <div id="chart-labels" class="grid grid-cols-7 text-center text-outline text-[11px] pt-3"></div>
+            </div>
+
+            <div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <h2 class="text-headline-md">Trạng thái đơn hàng</h2>
+                  <span class="material-symbols-outlined text-outline text-[18px]">donut_large</span>
+                </div>
+                <p class="text-body-sm text-on-surface-variant mb-6">Tỉ lệ đơn theo từng bước xử lý</p>
+                <div id="status-bars" class="space-y-5"><p class="text-outline">Đang tải...</p></div>
+              </div>
+              <div class="p-3.5 rounded-lg bg-surface-container-low/70 flex items-center gap-3 mt-6">
+                <span class="material-symbols-outlined text-primary text-[22px] shrink-0">tips_and_updates</span>
+                <p id="status-tip" class="text-[12px] text-on-surface-variant leading-relaxed">Duyệt và cập nhật trạng thái đơn trong mục Quản lý đơn của app.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Khách mới nhất -->
+          <div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
+            <div class="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-surface-container-low flex items-center justify-center text-primary">
+                  <span class="material-symbols-outlined text-[18px]">recent_actors</span>
+                </div>
+                <div>
+                  <h2 class="text-headline-md">Khách hàng mới nhất</h2>
+                  <p class="text-body-sm text-on-surface-variant">5 khách đăng ký hoặc được thêm gần đây nhất</p>
+                </div>
+              </div>
+              <button onclick="showSection('users')" class="px-3 py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface-variant text-label-sm flex items-center gap-1.5 self-start md:self-auto transition-colors">
+                <span>Xem tất cả</span><span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+              </button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="bg-surface-container-low/60 text-outline text-[12px] uppercase tracking-wider">
+                    <th class="py-3.5 px-6 font-medium">Khách hàng</th>
+                    <th class="py-3.5 px-6 font-medium">Email</th>
+                    <th class="py-3.5 px-6 font-medium">Số điện thoại</th>
+                    <th class="py-3.5 px-6 font-medium text-right">Giá/m² (VNĐ)</th>
+                    <th class="py-3.5 px-6 font-medium">Ngày tham gia</th>
+                  </tr>
+                </thead>
+                <tbody id="recent-users-body" class="divide-y divide-surface-container-low">
+                  <tr><td colspan="5" class="text-center py-8 text-outline">Đang tải...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ ĐƠN HÀNG ============ -->
+        <section class="section" id="section-orders">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="w-2 h-2 rounded-full bg-primary"></span>
+                <h1 class="text-headline-lg tracking-tight">Đơn hàng</h1>
+              </div>
+              <p class="text-on-surface-variant">Nhập mã vận đơn, đổi trạng thái cho từng đơn khách đặt trong app</p>
+            </div>
+            <div class="flex items-center gap-2.5 flex-wrap">
+              <div class="relative w-full sm:w-72">
+                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[17px]">search</span>
+                <input type="text" id="order-search" class="field pl-9 py-1.5" placeholder="Tìm khách, SĐT, mã tranh, mã vận đơn..." oninput="renderOrders()"/>
+              </div>
+              <button onclick="refreshUsers()" class="h-9 px-3 rounded-lg bg-surface-container-lowest hover:bg-surface-container-low text-label-sm flex items-center gap-1.5 shadow-sm transition-colors">
+                <span class="material-symbols-outlined text-[18px] text-secondary">sync</span>Tải lại
+              </button>
+            </div>
+          </div>
+          <div id="order-tabs" class="flex gap-1.5 overflow-x-auto pb-1 mb-5"></div>
+          <div id="orders-list" class="space-y-4"><p class="text-outline">Đang tải...</p></div>
+          <datalist id="carriers">
+            <option value="GHN"></option><option value="GHTK"></option><option value="Viettel Post"></option>
+            <option value="J&T Express"></option><option value="SPX Express"></option><option value="VNPost"></option>
+            <option value="Ahamove"></option><option value="Nhà xe"></option>
+          </datalist>
+        </section>
+
+        <!-- ============ BẢNG GIÁ ============ -->
+        <section class="section" id="section-pricing">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="w-2 h-2 rounded-full bg-primary"></span>
+            <h1 class="text-headline-lg tracking-tight">Bảng giá</h1>
+          </div>
+          <p class="text-on-surface-variant mb-8">Giá chung áp cho mọi khách; khách nào cần giá khác thì cài riêng trong Quản lý User</p>
+
+          <div class="grid grid-cols-1 xl:grid-cols-5 gap-6">
+            <div class="xl:col-span-3 bg-surface-container-lowest rounded-xl shadow-sm p-6">
+              <div class="flex items-center gap-2.5 mb-1">
+                <div class="w-8 h-8 rounded-lg bg-surface-container-low flex items-center justify-center text-primary">
+                  <span class="material-symbols-outlined text-[18px]">sell</span>
+                </div>
+                <h2 class="text-headline-md">Giá chung (VNĐ/m²)</h2>
+              </div>
+              <p id="global-note" class="text-body-sm text-on-surface-variant mb-5 ml-[42px]"></p>
+              <div id="global-tiers" class="space-y-3"></div>
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-6 pt-5 border-t border-surface-container">
+                <p id="global-apply-info" class="text-body-sm text-on-surface-variant"></p>
+                <button id="global-save-btn" onclick="saveGlobalPrices()" class="h-10 px-5 rounded-lg bg-primary hover:bg-primary-container text-on-primary text-label-md flex items-center justify-center gap-1.5 transition-colors disabled:opacity-60">
+                  <span class="material-symbols-outlined text-[18px]">save</span>Lưu giá chung
+                </button>
+              </div>
+            </div>
+
+            <div class="xl:col-span-2 bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
+              <div class="p-6 pb-4">
+                <h2 class="text-headline-md">Khách có giá riêng</h2>
+                <p class="text-body-sm text-on-surface-variant">Không bị thay đổi khi lưu giá chung</p>
+              </div>
+              <div id="custom-price-list" class="divide-y divide-surface-container-low"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ QUẢN LÝ USER ============ -->
+        <section class="section" id="section-users">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="w-2 h-2 rounded-full bg-primary"></span>
+            <h1 class="text-headline-lg tracking-tight">Quản lý khách hàng</h1>
+          </div>
+          <p class="text-on-surface-variant mb-8">Tài khoản đăng ký trong app (📱 App) và khách sỉ nhập tay (✍️ CRM)</p>
+
+          <div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
+            <div class="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <h2 class="text-headline-md">Danh sách khách hàng <span id="users-count" class="text-outline text-label-md"></span></h2>
+              <div class="flex items-center gap-2.5 flex-wrap">
+                <div class="relative w-full sm:w-64">
+                  <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[17px]">search</span>
+                  <input type="text" id="search-input" class="field pl-9 py-1.5" placeholder="Tìm tên, email, SĐT..." oninput="filterUsers()"/>
+                </div>
+                <button onclick="refreshUsers()" class="h-9 px-3 rounded-lg bg-surface-container-low hover:bg-surface-container text-label-sm flex items-center gap-1.5 transition-colors">
+                  <span class="material-symbols-outlined text-[18px]">sync</span>Tải lại
+                </button>
+                <button onclick="openAddModal()" class="h-9 px-3.5 rounded-lg bg-primary hover:bg-primary-container text-on-primary text-label-md flex items-center gap-1.5 transition-colors">
+                  <span class="material-symbols-outlined text-[18px]">person_add</span>Thêm KH
+                </button>
+              </div>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="bg-surface-container-low/60 text-outline text-[12px] uppercase tracking-wider">
+                    <th class="py-3.5 px-6 font-medium">Khách hàng</th>
+                    <th class="py-3.5 px-6 font-medium">Email</th>
+                    <th class="py-3.5 px-6 font-medium">SĐT</th>
+                    <th class="py-3.5 px-6 font-medium text-right">Giá/m² (VNĐ)</th>
+                    <th class="py-3.5 px-6 font-medium text-right">Phí ship (VNĐ)</th>
+                    <th class="py-3.5 px-6 font-medium">Ghi chú</th>
+                    <th class="py-3.5 px-6 font-medium text-right">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody id="users-table-body" class="divide-y divide-surface-container-low">
+                  <tr><td colspan="7" class="text-center py-12 text-outline">Đang tải...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ DOANH THU ============ -->
+        <section class="section" id="section-revenue">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="w-2 h-2 rounded-full bg-primary"></span>
+            <h1 class="text-headline-lg tracking-tight">Thống kê doanh thu</h1>
+          </div>
+          <p class="text-on-surface-variant mb-8">Máy tính nhanh và doanh thu ước tính theo giá sỉ từng khách</p>
+
+          <div class="bg-surface-container-lowest rounded-xl shadow-sm p-6 mb-6">
+            <div class="flex items-center gap-2.5 mb-5">
+              <div class="w-8 h-8 rounded-lg bg-surface-container-low flex items-center justify-center text-primary">
+                <span class="material-symbols-outlined text-[18px]">calculate</span>
+              </div>
+              <h2 class="text-headline-md">Tính doanh thu</h2>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-4 items-end">
+              <div>
+                <label class="block text-label-sm text-on-surface-variant mb-1.5" for="calc-price">Giá/m² (VNĐ)</label>
+                <input type="number" id="calc-price" class="field" placeholder="Nhập giá..." />
+              </div>
+              <div>
+                <label class="block text-label-sm text-on-surface-variant mb-1.5" for="calc-area">Diện tích (m²)</label>
+                <input type="number" id="calc-area" class="field" placeholder="m²..." />
+              </div>
+              <button onclick="calculateRevenue()" class="h-10 px-6 rounded-lg bg-primary hover:bg-primary-container text-on-primary text-label-md transition-colors">Tính</button>
+            </div>
+            <div id="calc-result" class="hidden mt-5"></div>
+          </div>
+
+          <div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
+            <div class="p-6">
+              <h2 class="text-headline-md">Doanh thu theo giá</h2>
+              <p class="text-body-sm text-on-surface-variant">Ước tính = giá/m² × 100 m²</p>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="bg-surface-container-low/60 text-outline text-[12px] uppercase tracking-wider">
+                    <th class="py-3.5 px-6 font-medium">Khách hàng</th>
+                    <th class="py-3.5 px-6 font-medium text-right">Giá/m²</th>
+                    <th class="py-3.5 px-6 font-medium text-right">Doanh thu ước tính</th>
+                  </tr>
+                </thead>
+                <tbody id="revenue-table" class="divide-y divide-surface-container-low">
+                  <tr><td colspan="3" class="text-center py-8 text-outline">Không có dữ liệu</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ XUẤT BÁO CÁO ============ -->
+        <section class="section" id="section-export">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="w-2 h-2 rounded-full bg-primary"></span>
+            <h1 class="text-headline-lg tracking-tight">Xuất báo cáo</h1>
+          </div>
+          <p class="text-on-surface-variant mb-8">Tải dữ liệu về file Excel (.xlsx)</p>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <button onclick="exportUsers()" class="text-left bg-surface-container-lowest rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow group">
+              <div class="w-11 h-11 rounded-xl bg-surface-container-low flex items-center justify-center text-primary mb-4 group-hover:bg-secondary-container transition-colors">
+                <span class="material-symbols-outlined">group</span>
+              </div>
+              <h3 class="text-headline-md mb-1">Danh sách khách hàng</h3>
+              <p class="text-body-sm text-on-surface-variant mb-4">Tên, email, SĐT, giá/m², phí ship, ghi chú</p>
+              <span class="text-label-md text-primary flex items-center gap-1"><span class="material-symbols-outlined text-[18px]">file_download</span>Tải Excel</span>
+            </button>
+            <button onclick="exportOrders()" class="text-left bg-surface-container-lowest rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow group">
+              <div class="w-11 h-11 rounded-xl bg-surface-container-low flex items-center justify-center text-primary mb-4 group-hover:bg-secondary-container transition-colors">
+                <span class="material-symbols-outlined">receipt_long</span>
+              </div>
+              <h3 class="text-headline-md mb-1">Đơn hàng</h3>
+              <p class="text-body-sm text-on-surface-variant mb-4">Ngày đặt, khách, mã tranh, m², số tấm, tiền, trạng thái</p>
+              <span class="text-label-md text-primary flex items-center gap-1"><span class="material-symbols-outlined text-[18px]">file_download</span>Tải Excel</span>
+            </button>
+            <button onclick="exportRevenue()" class="text-left bg-surface-container-lowest rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow group">
+              <div class="w-11 h-11 rounded-xl bg-surface-container-low flex items-center justify-center text-primary mb-4 group-hover:bg-secondary-container transition-colors">
+                <span class="material-symbols-outlined">query_stats</span>
+              </div>
+              <h3 class="text-headline-md mb-1">Doanh thu ước tính</h3>
+              <p class="text-body-sm text-on-surface-variant mb-4">Giá/m² và doanh thu ước tính theo từng khách</p>
+              <span class="text-label-md text-primary flex items-center gap-1"><span class="material-symbols-outlined text-[18px]">file_download</span>Tải Excel</span>
+            </button>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- ============ MODAL KHÁCH HÀNG ============ -->
+  <div class="modal-overlay fixed inset-0 bg-black/40 z-[60] items-center justify-center p-4" id="modal-user">
+    <div class="w-full max-w-md bg-surface-container-lowest rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.2)] overflow-hidden">
+      <div class="px-6 py-4 flex items-center justify-between border-b border-surface-container">
+        <h3 id="modal-title" class="text-headline-md">Thêm khách hàng</h3>
+        <button onclick="closeModal()" class="p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container-low" title="Đóng">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="p-6 space-y-4 max-h-[65vh] overflow-y-auto">
+        <input type="hidden" id="edit-id" />
+        <input type="hidden" id="edit-key" />
+        <div>
+          <label class="block text-label-sm text-on-surface-variant mb-1.5" for="edit-name">Tên khách hàng *</label>
+          <input type="text" id="edit-name" class="field" placeholder="Nguyễn Văn A" />
+        </div>
+        <div>
+          <label class="block text-label-sm text-on-surface-variant mb-1.5" for="edit-email">Email</label>
+          <input type="email" id="edit-email" class="field" placeholder="email@example.com" />
+        </div>
+        <div>
+          <label class="block text-label-sm text-on-surface-variant mb-1.5" for="edit-phone">Số điện thoại</label>
+          <input type="text" id="edit-phone" class="field" placeholder="0901234567" />
+        </div>
+        <div>
+          <label class="block text-label-sm text-on-surface-variant mb-1.5" for="edit-notes">Ghi chú</label>
+          <input type="text" id="edit-notes" class="field" placeholder="Ghi chú thêm..." />
+        </div>
+
+        <div class="pt-2">
+          <p class="text-label-sm text-on-surface-variant mb-2">Giá áp cho khách này</p>
+          <div class="grid grid-cols-3 gap-2" id="price-mode-group">
+            <label class="price-mode cursor-pointer rounded-lg border border-surface-container-high p-2.5 text-center text-label-sm has-[:checked]:border-primary has-[:checked]:bg-primary-fixed/50 has-[:disabled]:opacity-40 has-[:disabled]:cursor-not-allowed">
+              <input type="radio" name="price-mode" value="chung" class="sr-only" onchange="onPriceModeChange()" />
+              <span class="material-symbols-outlined text-[20px] block mx-auto mb-0.5">public</span>Giá chung
+            </label>
+            <label class="price-mode cursor-pointer rounded-lg border border-surface-container-high p-2.5 text-center text-label-sm has-[:checked]:border-primary has-[:checked]:bg-primary-fixed/50 has-[:disabled]:opacity-40 has-[:disabled]:cursor-not-allowed">
+              <input type="radio" name="price-mode" value="rieng" class="sr-only" onchange="onPriceModeChange()" />
+              <span class="material-symbols-outlined text-[20px] block mx-auto mb-0.5">tune</span>Bảng giá riêng
+            </label>
+            <label class="price-mode cursor-pointer rounded-lg border border-surface-container-high p-2.5 text-center text-label-sm has-[:checked]:border-primary has-[:checked]:bg-primary-fixed/50 has-[:disabled]:opacity-40 has-[:disabled]:cursor-not-allowed">
+              <input type="radio" name="price-mode" value="si" class="sr-only" onchange="onPriceModeChange()" />
+              <span class="material-symbols-outlined text-[20px] block mx-auto mb-0.5">storefront</span>Giá sỉ cố định
+            </label>
+          </div>
+          <p id="price-mode-hint" class="text-body-sm text-on-surface-variant mt-2"></p>
+
+          <div id="panel-chung" class="mt-3 hidden"></div>
+          <div id="panel-rieng" class="mt-3 hidden space-y-2.5"></div>
+          <div id="panel-si" class="mt-3 hidden grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-label-sm text-on-surface-variant mb-1.5" for="edit-price">Giá sỉ/m² (VNĐ) *</label>
+              <input type="number" id="edit-price" class="field" placeholder="VD: 180000" />
+            </div>
+            <div>
+              <label class="block text-label-sm text-on-surface-variant mb-1.5" for="edit-ship">Phí ship (VNĐ)</label>
+              <input type="number" id="edit-ship" class="field" placeholder="VD: 30000" />
+            </div>
           </div>
         </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Khách hàng</th>
-              <th>Email</th>
-              <th>SĐT</th>
-              <th>Giá/m² (VNĐ)</th>
-              <th>Phí ship (VNĐ)</th>
-              <th>Ghi chú</th>
-              <th>Thao tác</th>
-            </tr>
-          </thead>
-          <tbody id="users-table-body">
-            <tr><td colspan="6" style="text-align:center;padding:50px;">Đang tải...</td></tr>
-          </tbody>
-        </table>
       </div>
-    </div>
-
-    <div class="section" id="section-revenue">
-      <h2 style="margin-bottom:20px;">📈 Thống kê doanh thu</h2>
-      <div class="card" style="padding:22px;margin-bottom:24px;">
-        <h3 style="margin-bottom:16px;">🔢 Tính doanh thu</h3>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;">
-          <div class="form-group" style="margin:0;">
-            <label>Giá/m² (VNĐ)</label>
-            <input type="number" id="calc-price" placeholder="Nhập giá..." />
-          </div>
-          <div class="form-group" style="margin:0;">
-            <label>Diện tích (m²)</label>
-            <input type="number" id="calc-area" placeholder="m²..." />
-          </div>
-          <div style="display:flex;align-items:flex-end;">
-            <button class="btn btn-primary" onclick="calculateRevenue()">Tính</button>
-          </div>
-        </div>
-        <div id="calc-result" style="margin-top:16px;display:none;background:var(--bg);padding:16px;border-radius:8px;"></div>
+      <div class="px-6 py-4 flex justify-end gap-2.5 bg-surface-container-low/50">
+        <button onclick="closeModal()" class="h-9 px-4 rounded-lg bg-surface-container hover:bg-surface-container-high text-label-md transition-colors">Huỷ</button>
+        <button onclick="saveUser()" class="h-9 px-4 rounded-lg bg-primary hover:bg-primary-container text-on-primary text-label-md flex items-center gap-1.5 transition-colors">
+          <span class="material-symbols-outlined text-[18px]">save</span>Lưu
+        </button>
       </div>
-      <div class="card">
-        <div class="card-header"><h2>💼 Doanh thu theo giá</h2></div>
-        <table>
-          <thead>
-            <tr><th>Khách hàng</th><th>Giá/m²</th><th>Doanh thu ước tính</th></tr>
-          </thead>
-          <tbody id="revenue-table">
-            <tr><td colspan="3" style="text-align:center;padding:30px;">Không có dữ liệu</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="section" id="section-export">
-      <h2 style="margin-bottom:20px;">📥 Xuất báo cáo</h2>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;">
-        <button class="btn btn-success" onclick="exportUsers()" style="padding:20px;width:100%;">👥 Xuất User (Excel)</button>
-        <button class="btn btn-info" onclick="exportRevenue()" style="padding:20px;width:100%;">📊 Xuất Doanh thu (Excel)</button>
-      </div>
-    </div>
-
-  </div>
-</div>
-
-<div class="modal-overlay" id="modal-user">
-  <div class="modal">
-    <div class="modal-header">
-      <h3 id="modal-title">Thêm khách hàng</h3>
-      <button class="modal-close" onclick="closeModal()" style="background:none;border:none;color:#fff;font-size:20px;cursor:pointer;">✕</button>
-    </div>
-    <div class="modal-body">
-      <input type="hidden" id="edit-id" />
-      <div class="form-group">
-        <label>Tên khách hàng *</label>
-        <input type="text" id="edit-name" placeholder="Nguyễn Văn A" />
-      </div>
-      <div class="form-group">
-        <label>Email</label>
-        <input type="email" id="edit-email" placeholder="email@example.com" />
-      </div>
-      <div class="form-group">
-        <label>Số điện thoại</label>
-        <input type="text" id="edit-phone" placeholder="0901234567" />
-      </div>
-      <div class="form-group">
-        <label>Giá/m² (VNĐ) *</label>
-        <input type="number" id="edit-price" placeholder="VD: 180000, 200000..." />
-      </div>
-      <div class="form-group">
-        <label>Phí ship (VNĐ)</label>
-        <input type="number" id="edit-ship" placeholder="VD: 30000, 50000..." />
-      </div>
-      <div class="form-group">
-        <label>Ghi chú</label>
-        <input type="text" id="edit-notes" placeholder="Ghi chú thêm..." />
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn" onclick="closeModal()" style="background:var(--border);">Huỷ</button>
-      <button class="btn btn-primary" onclick="saveUser()">💾 Lưu</button>
     </div>
   </div>
-</div>
 
-<div class="toast" id="toast"></div>
+  <div class="toast fixed bottom-6 right-6 bg-on-surface text-white px-5 py-3 rounded-lg text-label-md shadow-lg z-[70]" id="toast"></div>
 </div><!-- end app-container -->
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-  import { getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+  import { getFirestore, collection, doc, getDocs, addDoc, updateDoc, deleteField } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
   import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-  import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+  import { getDatabase, ref, get, set, update } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
   import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-functions.js";
 
   const firebaseConfig = {
@@ -308,27 +634,29 @@
   const functions = getFunctions(app, 'asia-southeast1');
   const adminDeleteCustomer = httpsCallable(functions, 'admin_delete_customer');
 
+  const $ = (id) => document.getElementById(id);
+
   window.doLogin = async function() {
-    const email = document.getElementById('login-email').value.trim();
-    const password = document.getElementById('login-password').value;
-    const btn = document.getElementById('login-btn');
-    const errorEl = document.getElementById('login-error');
-    errorEl.style.display = 'none';
+    const email = $('login-email').value.trim();
+    const password = $('login-password').value;
+    const btn = $('login-btn');
+    const errorEl = $('login-error');
+    errorEl.classList.add('hidden');
     if (!email || !password) {
       errorEl.textContent = 'Nhập email và mật khẩu.';
-      errorEl.style.display = 'block';
+      errorEl.classList.remove('hidden');
       return;
     }
     btn.disabled = true;
-    btn.textContent = 'Đang đăng nhập...';
+    $('login-btn-text').textContent = 'Đang đăng nhập...';
     try {
       await signInWithEmailAndPassword(auth, email, password);
     } catch (e) {
       errorEl.textContent = 'Sai email hoặc mật khẩu.';
-      errorEl.style.display = 'block';
+      errorEl.classList.remove('hidden');
     } finally {
       btn.disabled = false;
-      btn.textContent = 'Đăng nhập';
+      $('login-btn-text').textContent = 'Đăng nhập';
     }
   };
 
@@ -348,23 +676,28 @@
   onAuthStateChanged(auth, (user) => {
     if (user && (user.email || '').toLowerCase() !== ADMIN_EMAIL) {
       signOut(auth);
-      const errorEl = document.getElementById('login-error');
+      const errorEl = $('login-error');
       errorEl.textContent = 'Tài khoản này không có quyền quản trị.';
-      errorEl.style.display = 'block';
+      errorEl.classList.remove('hidden');
       return;
     }
     if (user) {
-      document.getElementById('login-screen').style.display = 'none';
-      document.getElementById('app-container').style.display = 'flex';
+      $('login-screen').classList.add('hidden');
+      $('app-container').classList.remove('hidden');
+      $('admin-email').textContent = user.email;
+      $('admin-email').title = user.email;
       window.loadUsers();
     } else {
-      document.getElementById('app-container').style.display = 'none';
-      document.getElementById('login-screen').style.display = 'flex';
+      $('app-container').classList.add('hidden');
+      $('login-screen').classList.remove('hidden');
     }
   });
 
   let allUsers = [];
+  let allOrders = [];
   const fmt = (n) => new Intl.NumberFormat('vi-VN').format(n);
+  const fmtShort = (n) => n >= 1e9 ? (n / 1e9).toFixed(1).replace('.', ',') + ' tỷ'
+    : n >= 1e6 ? (n / 1e6).toFixed(1).replace('.', ',') + ' tr' : fmt(n);
   const normalizeText = (value) => {
     if (value === null || value === undefined) return '';
     const text = String(value).trim();
@@ -392,17 +725,52 @@
     return pickValidText((user.email || '').split('@')[0]) || '–';
   };
 
+  // Ô chữ viết tắt tên khách (giống thiết kế Stitch)
+  const AVATAR_TONES = [
+    'bg-primary-fixed text-on-primary-fixed',
+    'bg-secondary-container text-on-secondary-container',
+    'bg-tertiary-fixed text-on-tertiary-fixed',
+    'bg-primary-fixed-dim text-on-primary-fixed-variant',
+    'bg-surface-container-highest text-on-surface-variant',
+  ];
+  function avatarHtml(name) {
+    const clean = name === '–' ? '?' : name;
+    const initials = clean.split(/\s+/).filter(Boolean).slice(-2).map(w => w[0]).join('').toUpperCase() || '?';
+    let h = 0;
+    for (const ch of clean) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    return `<div class="w-9 h-9 rounded-lg ${AVATAR_TONES[h % AVATAR_TONES.length]} flex items-center justify-center text-label-md font-semibold shrink-0">${esc(initials)}</div>`;
+  }
+  const sourceBadge = (u) => u.registered
+    ? `<span title="Đã đăng ký tài khoản trong app" class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-secondary-container text-on-secondary-container">📱 App</span>`
+    : `<span title="Khách sỉ tự thêm tay (CRM)" class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-tertiary-fixed text-on-tertiary-fixed">✍️ CRM</span>`;
+  function customerCell(u) {
+    const name = getCustomerName(u);
+    return `<div class="flex items-center gap-3">${avatarHtml(name)}<div class="flex flex-col min-w-0 gap-0.5"><span class="text-label-md">${esc(name)}</span>${sourceBadge(u)}</div></div>`;
+  }
+
+  const SECTION_TITLES = { overview: 'Tổng quan', orders: 'Đơn hàng', users: 'Quản lý User', pricing: 'Bảng giá', revenue: 'Thống kê doanh thu', export: 'Xuất báo cáo' };
   window.showSection = function(name) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    document.getElementById('section-' + name).classList.add('active');
-    const titles = { overview: '📊 Tổng quan', users: '👥 Quản lý User', revenue: '📈 Thống kê doanh thu', export: '📥 Xuất báo cáo' };
-    document.getElementById('page-title').textContent = titles[name];
+    $('section-' + name).classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.section === name));
+    $('page-title').textContent = SECTION_TITLES[name];
+    window.toggleSidebar(false);
+    window.scrollTo({ top: 0 });
+  };
+  document.querySelectorAll('.nav-item').forEach(n => n.addEventListener('click', (ev) => {
+    ev.preventDefault();
+    window.showSection(n.dataset.section);
+  }));
+
+  window.toggleSidebar = function(open) {
+    $('sidebar').classList.toggle('-translate-x-full', !open);
+    $('sidebar-backdrop').classList.toggle('hidden', !open);
   };
 
   window.showToast = function(msg, type = 'success') {
-    const toast = document.getElementById('toast');
+    const toast = $('toast');
     toast.textContent = msg;
-    toast.className = 'toast show ' + type;
+    toast.className = toast.className.replace(/\b(show|success|error)\b/g, '').trim() + ' show ' + type;
     setTimeout(() => toast.classList.remove('show'), 3000);
   };
 
@@ -443,12 +811,22 @@
     }
   }
 
-  function tieredRangeLabel(prices) {
-    if (!prices) return null;
-    const vals = [prices.p1, prices.p2, prices.p3, prices.p4, prices.p5].filter(v => typeof v === 'number');
-    if (!vals.length) return null;
-    const lo = Math.min(...vals), hi = Math.max(...vals);
-    return lo === hi ? fmt(lo) : `${fmt(lo)}–${fmt(hi)}`;
+  // Đơn hàng thật đặt từ app (Realtime Database /orders/{uid}/{orderId})
+  async function loadOrders() {
+    try {
+      const snap = await get(ref(rtdb, 'orders'));
+      if (!snap.exists()) return [];
+      const list = [];
+      Object.entries(snap.val()).forEach(([uid, byId]) => {
+        Object.entries(byId || {}).forEach(([orderId, o]) => {
+          if (o && typeof o === 'object') list.push({ uid, orderId, ...o });
+        });
+      });
+      return list.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+    } catch (e) {
+      console.error('Không đọc được đơn hàng:', e);
+      return [];
+    }
   }
 
   // Gộp 2 nguồn theo email: tài khoản đăng ký thật (RTDB) + CRM giá sỉ (Firestore)
@@ -519,15 +897,22 @@
 
   window.loadUsers = async function() {
     try {
-      const [fsUsers, rtdbUsers] = await Promise.all([
+      const [fsUsers, rtdbUsers, orders, gp] = await Promise.all([
         loadFirestoreUsers(),
         loadRtdbUsers(),
+        loadOrders(),
+        loadGlobalPrices(),
       ]);
+      globalPrices = gp;
       allUsers = mergeUsers(fsUsers, rtdbUsers)
         .sort((a, b) => toEpochSeconds(b.createdAt) - toEpochSeconds(a.createdAt));
+      allOrders = orders;
 
-      window.renderUsersTable(allUsers);
+      window.filterUsers();
       window.updateStats();
+      window.renderOrderInsights();
+      window.renderOrders();
+      window.renderPricing();
       window.renderRevenueTable();
     } catch(e) {
       window.showToast('Lỗi: ' + e.message, 'error');
@@ -536,30 +921,28 @@
   };
 
   window.renderUsersTable = function(users) {
-    const tbody = document.getElementById('users-table-body');
+    const tbody = $('users-table-body');
+    $('users-count').textContent = `(${users.length})`;
     if (!users.length) {
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:50px;">Chưa có KH</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" class="text-center py-12 text-outline">Chưa có khách hàng</td></tr>';
       return;
     }
     tbody.innerHTML = users.map(u => {
-      const priceDisplay = u.price ? fmt(u.price) : (tieredRangeLabel(u.rtdbPrices) || '–');
-      const badge = u.registered
-        ? `<span title="Đã đăng ký tài khoản trong app" style="display:inline-block;margin-left:6px;padding:1px 7px;border-radius:10px;font-size:10px;background:#e3f2fd;color:#1565c0;">📱 App</span>`
-        : `<span title="Khách sỉ tự thêm tay (CRM)" style="display:inline-block;margin-left:6px;padding:1px 7px;border-radius:10px;font-size:10px;background:#f3e5f5;color:#7b1fa2;">✍️ CRM</span>`;
       return `
-      <tr>
-        <td><strong>${esc(getCustomerName(u))}</strong>${badge}</td>
-        <td>${esc(u.email || '–')}</td>
-        <td>${esc(u.phone || '–')}</td>
-        <td><strong style="color:var(--primary);">${esc(priceDisplay)}</strong></td>
-        <td>${u.shipPrice ? esc(fmt(u.shipPrice)) : '–'}</td>
-        <td>${esc(u.notes || '–')}</td>
-        <td style="white-space:nowrap;">
-          <button class="btn btn-primary btn-sm" data-action="edit" data-key="${esc(u._key)}">✏️</button>
-          <button class="btn btn-danger btn-sm" data-action="delete" data-key="${esc(u._key)}">🗑️</button>
+      <tr class="hover:bg-surface-container-low/40 transition-colors">
+        <td class="py-4 px-6">${customerCell(u)}</td>
+        <td class="py-4 px-6 text-body-sm">${esc(u.email || '–')}</td>
+        <td class="py-4 px-6 text-body-sm tabular-nums whitespace-nowrap">${esc(u.phone || '–')}</td>
+        <td class="py-4 px-6 text-right whitespace-nowrap">${priceCell(u)}</td>
+        <td class="py-4 px-6 text-right tabular-nums text-body-sm whitespace-nowrap">${u.shipPrice && priceMode(u) === 'si' ? esc(fmt(u.shipPrice)) : '–'}</td>
+        <td class="py-4 px-6 text-body-sm text-on-surface-variant max-w-[220px]">${esc(u.notes || '–')}</td>
+        <td class="py-4 px-6 text-right whitespace-nowrap">
+          <button class="p-1.5 rounded-lg text-outline hover:text-on-surface hover:bg-surface-container-low transition-colors" title="Chỉnh sửa" data-action="edit" data-key="${esc(u._key)}">
+            <span class="material-symbols-outlined text-[18px] pointer-events-none">edit</span></button>
+          <button class="p-1.5 rounded-lg text-outline hover:text-error hover:bg-error-container/60 transition-colors" title="Xoá" data-action="delete" data-key="${esc(u._key)}">
+            <span class="material-symbols-outlined text-[18px] pointer-events-none">delete</span></button>
         </td>
-      </tr>
-    `;
+      </tr>`;
     }).join('');
   };
 
@@ -573,7 +956,7 @@
   });
 
   window.filterUsers = function() {
-    const search = document.getElementById('search-input').value.toLowerCase();
+    const search = $('search-input').value.toLowerCase();
     const filtered = allUsers.filter(u =>
       !search || getCustomerName(u).toLowerCase().includes(search) ||
       (u.email || '').toLowerCase().includes(search) ||
@@ -589,85 +972,556 @@
 
   window.updateStats = function() {
     const total = allUsers.length;
+    const appCount = allUsers.filter(u => u.registered).length;
     const prices = allUsers.filter(u => u.price).map(u => u.price);
     const avgPrice = prices.length ? Math.round(prices.reduce((a, b) => a + b) / prices.length) : 0;
-    document.getElementById('stat-total-users').textContent = total;
-    document.getElementById('stat-avg-price').textContent = avgPrice ? fmt(avgPrice) : '–';
-    document.getElementById('stat-revenue').textContent = '~' + fmt(total * avgPrice * 100);
+    $('stat-total-users').textContent = total;
+    $('stat-users-split').textContent = `${appCount} tài khoản app · ${total - appCount} khách CRM`;
+    $('stat-avg-price').textContent = avgPrice ? fmt(avgPrice) : '–';
+    $('stat-price-range').textContent = prices.length
+      ? `Khoảng giá: ${fmt(Math.min(...prices))} – ${fmt(Math.max(...prices))}`
+      : 'Chưa có khách nào được đặt giá sỉ';
 
-    const tbody = document.getElementById('recent-users-body');
-    const recent = allUsers.slice(0, 5);
-    tbody.innerHTML = recent.map(u => {
+    const tbody = $('recent-users-body');
+    tbody.innerHTML = allUsers.slice(0, 5).map(u => {
       const epoch = toEpochSeconds(u.createdAt);
       const date = epoch ? new Date(epoch * 1000).toLocaleDateString('vi-VN') : '–';
-      return `<tr><td>${esc(getCustomerName(u))}</td><td>${esc(u.email || '–')}</td><td>${esc(u.phone || '–')}</td><td><strong>${esc(fmt(u.price || 0))}</strong></td><td>${esc(date)}</td></tr>`;
-    }).join('') || '<tr><td colspan="5" style="text-align:center;">Không có dữ liệu</td></tr>';
+      return `<tr class="hover:bg-surface-container-low/40 transition-colors">
+        <td class="py-4 px-6">${customerCell(u)}</td>
+        <td class="py-4 px-6 text-body-sm">${esc(u.email || '–')}</td>
+        <td class="py-4 px-6 text-body-sm tabular-nums whitespace-nowrap">${esc(u.phone || '–')}</td>
+        <td class="py-4 px-6 text-right whitespace-nowrap">${priceCell(u)}</td>
+        <td class="py-4 px-6 text-body-sm text-on-surface-variant tabular-nums">${esc(date)}</td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="5" class="text-center py-8 text-outline">Không có dữ liệu</td></tr>';
   };
 
+  // ===== Đơn hàng: chỉ số, biểu đồ 7 ngày, tỉ lệ trạng thái =====
+  const ORDER_STATUSES = [
+    { key: 'cho_xac_nhan', label: 'Chờ xác nhận', color: '#b7791f' },
+    { key: 'cho_lay_hang', label: 'Chờ lấy hàng', color: '#516072' },
+    { key: 'dang_giao', label: 'Chờ giao hàng', color: '#475569' },
+    { key: 'da_giao', label: 'Đã giao', color: '#1b7f4b' },
+    { key: 'da_huy', label: 'Đã hủy', color: '#ba1a1a' },
+  ];
+  const statusOf = (o) => o.status || 'cho_xac_nhan';
+  const orderLabel = (o) => (ORDER_STATUSES.find(s => s.key === statusOf(o)) || ORDER_STATUSES[0]).label;
+  const num = (v) => (typeof v === 'number' && isFinite(v)) ? v : (parseFloat(v) || 0);
+
+  window.renderOrderInsights = function() {
+    const active = allOrders.filter(o => statusOf(o) !== 'da_huy');
+    const revenue = active.reduce((s, o) => s + num(o.tongTien), 0);
+    const now = new Date();
+    const monthRevenue = active.filter(o => {
+      const d = new Date(o.createdAt);
+      return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+    }).reduce((s, o) => s + num(o.tongTien), 0);
+    const pending = allOrders.filter(o => statusOf(o) === 'cho_xac_nhan').length;
+    const delivered = allOrders.filter(o => statusOf(o) === 'da_giao').length;
+
+    $('stat-revenue').textContent = fmt(Math.round(revenue));
+    $('stat-revenue').title = fmt(Math.round(revenue)) + ' ₫';
+    $('stat-revenue-month').textContent = `Tháng này: ${fmtShort(Math.round(monthRevenue))} ₫`;
+    $('stat-orders').textContent = allOrders.length;
+    $('stat-orders-pending').textContent = `${pending} chờ xác nhận`;
+    $('stat-orders-done').textContent = active.length ? `Hoàn tất ${Math.round(delivered * 100 / active.length)}%` : '';
+
+    // Thanh tỉ lệ trạng thái
+    const total = allOrders.length;
+    $('status-bars').innerHTML = total ? ORDER_STATUSES.map(s => {
+      const count = allOrders.filter(o => statusOf(o) === s.key).length;
+      const pct = Math.round(count * 100 / total);
+      return `<div>
+        <div class="flex justify-between items-center mb-1.5 text-label-sm">
+          <span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full" style="background:${s.color}"></span>${s.label}</span>
+          <span class="font-semibold">${pct}% <span class="font-normal text-outline text-[11px]">(${count} đơn)</span></span>
+        </div>
+        <div class="w-full h-2 rounded-full bg-surface-container-low overflow-hidden">
+          <div class="h-full rounded-full" style="width:${pct}%;background:${s.color}"></div>
+        </div>
+      </div>`;
+    }).join('') : '<p class="text-outline">Chưa có đơn hàng nào.</p>';
+    $('status-tip').innerHTML = pending
+      ? `Đang có <strong class="text-on-surface">${pending} đơn chờ xác nhận</strong>. <a href="#" class="underline text-primary" onclick="event.preventDefault();showSection('orders')">Mở mục Đơn hàng</a> để duyệt.`
+      : 'Không có đơn nào đang chờ xác nhận. 👍';
+    $('nav-pending').textContent = pending;
+    $('nav-pending').classList.toggle('hidden', !pending);
+
+    renderChart(active);
+  };
+
+  function renderChart(activeOrders) {
+    const days = [];
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today); d.setDate(today.getDate() - i);
+      days.push({ date: d, revenue: 0, area: 0, count: 0 });
+    }
+    activeOrders.forEach(o => {
+      const d = new Date(o.createdAt);
+      if (isNaN(d)) return;
+      d.setHours(0, 0, 0, 0);
+      const day = days.find(x => x.date.getTime() === d.getTime());
+      if (!day) return;
+      day.revenue += num(o.tongTien);
+      day.area += num(o.tongDienTich);
+      day.count++;
+    });
+
+    const W = 700, H = 220, base = 200, top = 24;
+    const maxRev = Math.max(...days.map(d => d.revenue), 1);
+    const maxArea = Math.max(...days.map(d => d.area), 1);
+    const step = W / days.length;
+    const xs = days.map((_, i) => step * i + step / 2);
+    const yRev = days.map(d => base - (d.revenue / maxRev) * (base - top));
+    const pts = xs.map((x, i) => `${x.toFixed(1)},${yRev[i].toFixed(1)}`);
+    const linePath = 'M ' + pts.join(' L ');
+    const areaPath = `${linePath} L ${xs[xs.length - 1].toFixed(1)},${base} L ${xs[0].toFixed(1)},${base} Z`;
+
+    const bars = days.map((d, i) => {
+      const h = (d.area / maxArea) * (base - top) * 0.85;
+      return `<rect fill="#D2E1F7" opacity="0.85" rx="3" width="18" x="${(xs[i] - 9).toFixed(1)}" y="${(base - h).toFixed(1)}" height="${h.toFixed(1)}"></rect>`;
+    }).join('');
+    const dots = days.map((d, i) => `<circle class="chart-dot" cx="${xs[i].toFixed(1)}" cy="${yRev[i].toFixed(1)}" r="4.5" fill="#303E51" stroke="#fff" stroke-width="2">
+      <title>${d.date.toLocaleDateString('vi-VN')}: ${fmt(Math.round(d.revenue))} ₫ · ${d.area.toFixed(1)} m² · ${d.count} đơn</title></circle>`).join('');
+    const grid = [top + 16, (top + base) / 2, base - 50].map(y =>
+      `<line stroke="#E2E8F0" stroke-dasharray="3 3" x1="0" x2="${W}" y1="${y}" y2="${y}"></line>`).join('');
+
+    const last = days[days.length - 1];
+    const weekRev = days.reduce((s, d) => s + d.revenue, 0);
+    const weekArea = days.reduce((s, d) => s + d.area, 0);
+    $('chart').innerHTML = `
+      <svg class="w-full h-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 ${W} ${H}">
+        <defs><linearGradient id="areaGradient" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stop-color="#475569" stop-opacity="0.18"></stop>
+          <stop offset="100%" stop-color="#475569" stop-opacity="0"></stop>
+        </linearGradient></defs>
+        ${grid}
+        <line stroke="#E2E8F0" x1="0" x2="${W}" y1="${base}" y2="${base}"></line>
+        ${bars}
+        <path d="${areaPath}" fill="url(#areaGradient)"></path>
+        <path d="${linePath}" fill="none" stroke="#303E51" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path>
+        ${dots}
+      </svg>
+`;
+
+    const pill = (label, value) => `<span class="px-2.5 py-1 rounded-full bg-surface-container-low text-on-surface-variant">${label}: <strong class="text-on-surface">${value}</strong></span>`;
+    $('chart-summary').innerHTML = pill('Tổng 7 ngày', `${fmt(Math.round(weekRev))} ₫`) + pill('Diện tích', `${weekArea.toFixed(1)} m²`) + pill('Hôm nay', `${fmt(Math.round(last.revenue))} ₫`);
+    $('chart-labels').innerHTML = days.map((d, i) => {
+      const isToday = i === days.length - 1;
+      const label = isToday ? 'Hôm nay' : d.date.toLocaleDateString('vi-VN', { weekday: 'short' });
+      const dm = d.date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+      return `<span class="${isToday ? 'text-on-surface font-semibold' : ''}">${label}<br class="sm:hidden"/> <span class="hidden sm:inline">(${dm})</span></span>`;
+    }).join('');
+  }
+
+  // ===== Bảng giá =====
+  // App (bản đang phát hành) tính giá theo thứ tự: giá sỉ Firestore → users/{uid}/prices
+  // → giá mặc định viết sẵn trong app. "Giá chung" vì thế được chép vào users/{uid}/prices
+  // của mọi khách đang dùng giá chung; khách mới đăng ký nhận qua Cloud Function on_user_created.
+  const TIERS = [
+    { k: 'p1', label: 'Bể dài ≤ 60 cm' },
+    { k: 'p2', label: 'Bể dài 61 – 80 cm' },
+    { k: 'p3', label: 'Bể dài 81 – 90 cm' },
+    { k: 'p4', label: 'Bể dài 91 – 99 cm' },
+    { k: 'p5', label: 'Bể dài từ 100 cm' },
+  ];
+  // Giống PriceConfig.defaults trong app (user_service.dart)
+  const APP_DEFAULT_PRICES = { p1: 400000, p2: 350000, p3: 300000, p4: 270000, p5: 230000 };
+  let globalPrices = null;
+
+  async function loadGlobalPrices() {
+    try {
+      const snap = await get(ref(rtdb, 'settings/prices'));
+      return snap.exists() ? snap.val() : null;
+    } catch (e) {
+      console.error('Không đọc được giá chung:', e);
+      return null;
+    }
+  }
+  const tiersOnly = (p) => Object.fromEntries(TIERS.map(t => [t.k, num(p[t.k])]));
+  const effectiveGlobal = () => tiersOnly({ ...APP_DEFAULT_PRICES, ...(globalPrices || {}) });
+  const sameTiers = (a, b) => TIERS.every(t => num(a && a[t.k]) === num(b && b[t.k]));
+
+  // 'si' = giá sỉ cố định (Firestore), 'rieng' = bảng giá riêng khác giá chung, 'chung' = còn lại
+  function priceMode(u) {
+    if (u.price > 0) return 'si';
+    const p = u.rtdbPrices;
+    if (u.uid && p && (p.giaSi > 0 || !sameTiers(p, effectiveGlobal()))) return 'rieng';
+    return 'chung';
+  }
+  function rangeText(p) {
+    const vals = TIERS.map(t => num(p[t.k])).filter(v => v > 0);
+    if (!vals.length) return '–';
+    const lo = Math.min(...vals), hi = Math.max(...vals);
+    return lo === hi ? fmt(lo) : `${fmt(lo)}–${fmt(hi)}`;
+  }
+  const MODE_CHIP = {
+    si: '<span class="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-warn-container text-warn">sỉ</span>',
+    rieng: '<span class="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary-fixed text-on-primary-fixed">riêng</span>',
+    chung: '<span class="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-surface-container-high text-on-surface-variant">chung</span>',
+  };
+  function priceText(u) {
+    const mode = priceMode(u);
+    if (mode === 'si') return fmt(u.price);
+    if (mode === 'rieng') return u.rtdbPrices.giaSi > 0 ? fmt(u.rtdbPrices.giaSi) : rangeText(u.rtdbPrices);
+    return rangeText(effectiveGlobal());
+  }
+  function priceCell(u) {
+    const mode = priceMode(u);
+    return `<span class="tabular-nums ${mode === 'chung' ? 'text-on-surface-variant' : 'font-medium'}">${esc(priceText(u))}</span>${MODE_CHIP[mode]}`;
+  }
+
+  window.renderPricing = function() {
+    const g = effectiveGlobal();
+    $('global-note').textContent = globalPrices
+      ? 'Áp dụng theo chiều dài bể. Giảm giá số lượng và phí ship lẻ giữ nguyên như trong app.'
+      : 'Chưa lưu giá chung — app đang dùng giá mặc định bên dưới. Bấm Lưu để bắt đầu quản lý từ Dashboard.';
+    $('global-tiers').innerHTML = tierInputs('global', g);
+    const followers = allUsers.filter(u => u.uid && priceMode(u) === 'chung').length;
+    $('global-apply-info').innerHTML = `Khi lưu sẽ áp cho <strong class="text-on-surface">${followers} tài khoản</strong> đang dùng giá chung và khách đăng ký mới.`;
+
+    const customs = allUsers.filter(u => priceMode(u) !== 'chung');
+    $('custom-price-list').innerHTML = customs.map(u => `
+      <div class="px-6 py-3 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">${avatarHtml(getCustomerName(u))}
+          <div class="min-w-0"><p class="text-label-md truncate">${esc(getCustomerName(u))}</p>
+          <p class="text-body-sm">${priceCell(u)}</p></div></div>
+        <button class="p-1.5 rounded-lg text-outline hover:text-on-surface hover:bg-surface-container-low shrink-0" title="Sửa giá" data-action="edit" data-key="${esc(u._key)}">
+          <span class="material-symbols-outlined text-[18px] pointer-events-none">edit</span></button>
+      </div>`).join('') || '<p class="px-6 pb-6 text-body-sm text-outline">Chưa có khách nào có giá riêng.</p>';
+  };
+
+  window.saveGlobalPrices = async function() {
+    const tiers = readTiers('global');
+    if (!tiers) { window.showToast('⚠️ Nhập đủ 5 mức giá (số lớn hơn 0)', 'error'); return; }
+    // Xác định khách đang theo giá chung TRƯỚC khi đổi (so với giá chung cũ)
+    const followers = allUsers.filter(u => u.uid && priceMode(u) === 'chung');
+    if (!confirm(`Lưu giá chung mới và áp cho ${followers.length} tài khoản đang dùng giá chung?\nKhách có giá riêng / giá sỉ không bị thay đổi.`)) return;
+    const updates = { 'settings/prices': tiers };
+    followers.forEach(u => { updates[`users/${u.uid}/prices`] = tiers; });
+    const btn = $('global-save-btn');
+    btn.disabled = true;
+    try {
+      await update(ref(rtdb), updates);
+      window.showToast(`✓ Đã lưu giá chung, áp cho ${followers.length} tài khoản`);
+      window.loadUsers();
+    } catch (e) {
+      window.showToast('❌ Lỗi: ' + e.message, 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  };
+
+  // ===== Đơn hàng: mã vận đơn + trạng thái =====
+  let orderTab = 'all';
+  const orderKey = (o) => `${o.uid}/${o.orderId}`;
+  const findOrder = (key) => allOrders.find(o => orderKey(o) === key);
+  const STATUS_CHIP = {
+    cho_xac_nhan: 'bg-warn-container text-warn',
+    cho_lay_hang: 'bg-secondary-container text-on-secondary-container',
+    dang_giao: 'bg-primary-fixed text-on-primary-fixed',
+    da_giao: 'bg-success-container text-success',
+    da_huy: 'bg-error-container text-on-error-container',
+  };
+
+  window.setOrderTab = function(tab) { orderTab = tab; window.renderOrders(); };
+
+  window.renderOrders = function() {
+    const tabs = [{ key: 'all', label: 'Tất cả' }, ...ORDER_STATUSES];
+    $('order-tabs').innerHTML = tabs.map(t => {
+      const count = t.key === 'all' ? allOrders.length : allOrders.filter(o => statusOf(o) === t.key).length;
+      const active = orderTab === t.key;
+      return `<button onclick="setOrderTab('${t.key}')" class="shrink-0 h-8 px-3 rounded-full text-label-sm transition-colors ${active ? 'bg-primary text-on-primary' : 'bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container-low shadow-sm'}">${t.label} <span class="opacity-70">${count}</span></button>`;
+    }).join('');
+
+    const q = ($('order-search').value || '').toLowerCase().trim();
+    const list = allOrders.filter(o => (orderTab === 'all' || statusOf(o) === orderTab) && (!q ||
+      [o.customerName, o.customerPhone, o.imageId, o.maVanDon, o.customerAddress].some(v => String(v || '').toLowerCase().includes(q))));
+
+    if (!list.length) {
+      $('orders-list').innerHTML = '<div class="bg-surface-container-lowest rounded-xl shadow-sm p-10 text-center text-outline">Không có đơn hàng nào.</div>';
+      return;
+    }
+    $('orders-list').innerHTML = list.map(o => {
+      const st = statusOf(o);
+      const key = esc(orderKey(o));
+      const date = o.createdAt ? new Date(o.createdAt).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) : '–';
+      const faces = Array.isArray(o.cacMatIn) ? o.cacMatIn.join(', ') : (o.cacMatIn ? Object.values(o.cacMatIn).join(', ') : '');
+      const groupSize = o.groupId ? allOrders.filter(x => x.groupId === o.groupId).length : 0;
+      const locked = st === 'da_huy';
+      return `<article class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden" data-order="${key}">
+        <div class="p-5 flex flex-col md:flex-row gap-5">
+          <div class="flex gap-4 md:w-[38%] min-w-0">
+            ${o.imageUrl ? `<img src="${esc(o.imageUrl)}" alt="" loading="lazy" class="w-20 h-20 rounded-lg object-cover bg-surface-container-low shrink-0"/>`
+              : '<div class="w-20 h-20 rounded-lg bg-surface-container-low flex items-center justify-center text-outline shrink-0"><span class="material-symbols-outlined">image</span></div>'}
+            <div class="min-w-0">
+              <div class="flex items-center gap-2 flex-wrap mb-1">
+                <span class="text-label-md">${esc(o.imageId || 'Không rõ mã tranh')}</span>
+                <span class="px-2 py-0.5 rounded-full text-[11px] font-medium ${STATUS_CHIP[st] || STATUS_CHIP.cho_xac_nhan}">${esc(orderLabel(o))}</span>
+                ${groupSize > 1 ? `<span class="px-2 py-0.5 rounded-full text-[11px] bg-surface-container-high text-on-surface-variant" title="Đặt chung một giỏ">Giỏ ${groupSize} đơn</span>` : ''}
+              </div>
+              <p class="text-body-sm text-on-surface-variant">${esc(date)}</p>
+              <p class="text-body-sm text-on-surface-variant">${num(o.tongDienTich).toFixed(2)} m² · ${num(o.tongSoTam)} tấm${o.chatLieu ? ' · ' + esc(o.chatLieu) : ''}</p>
+              ${faces ? `<p class="text-body-sm text-outline truncate">Mặt in: ${esc(faces)}</p>` : ''}
+            </div>
+          </div>
+          <div class="md:w-[34%] min-w-0">
+            <div class="flex items-center justify-between gap-2">
+              <p class="text-label-md truncate">${esc(o.customerName || '–')}</p>
+              <button class="p-1 rounded text-outline hover:text-primary hover:bg-surface-container-low shrink-0" title="Sao chép thông tin giao hàng" data-oaction="copy-ship">
+                <span class="material-symbols-outlined text-[16px] pointer-events-none">content_copy</span></button>
+            </div>
+            <p class="text-body-sm tabular-nums">${esc(o.customerPhone || '')}</p>
+            <p class="text-body-sm text-on-surface-variant line-clamp-2">${esc(o.customerAddress || '')}</p>
+            ${o.cancelReason ? `<p class="text-body-sm text-error mt-1">Lý do hủy: ${esc(o.cancelReason)}</p>` : ''}
+          </div>
+          <div class="md:w-[28%] md:text-right">
+            <p class="text-label-sm text-outline uppercase tracking-wider">Tổng tiền</p>
+            <p class="text-headline-md tabular-nums">${fmt(Math.round(num(o.tongTien)))} ₫</p>
+            ${num(o.discountTien) > 0 ? `<p class="text-body-sm text-success">Đã giảm ${fmt(Math.round(num(o.discountTien)))} ₫</p>` : ''}
+          </div>
+        </div>
+        <div class="px-5 py-4 bg-surface-container-low/50 grid grid-cols-1 lg:grid-cols-[180px_1fr_1fr_auto] gap-3 items-end">
+          <div>
+            <label class="block text-label-sm text-on-surface-variant mb-1">Trạng thái</label>
+            <select class="field py-2 bg-surface-container-lowest" data-oaction="status">
+              ${ORDER_STATUSES.map(s => `<option value="${s.key}" ${s.key === st ? 'selected' : ''}>${s.label}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label class="block text-label-sm text-on-surface-variant mb-1">Đơn vị vận chuyển</label>
+            <input class="field py-2 bg-surface-container-lowest" list="carriers" maxlength="60" placeholder="VD: GHN, Viettel Post..." value="${esc(o.donViVanChuyen || '')}" data-field="carrier" ${locked ? 'disabled' : ''}/>
+          </div>
+          <div>
+            <label class="block text-label-sm text-on-surface-variant mb-1">Mã vận đơn</label>
+            <div class="relative">
+              <input class="field py-2 pr-10 bg-surface-container-lowest tabular-nums" maxlength="60" placeholder="Dán mã vận đơn..." value="${esc(o.maVanDon || '')}" data-field="code" ${locked ? 'disabled' : ''}/>
+              <button class="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 rounded text-outline hover:text-primary ${o.maVanDon ? '' : 'hidden'}" title="Sao chép mã vận đơn" data-oaction="copy-code">
+                <span class="material-symbols-outlined text-[17px] pointer-events-none">content_copy</span></button>
+            </div>
+          </div>
+          <button class="h-10 px-4 rounded-lg bg-primary hover:bg-primary-container text-on-primary text-label-md flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50" data-oaction="save-track" ${locked ? 'disabled' : ''}>
+            <span class="material-symbols-outlined text-[18px] pointer-events-none">local_shipping</span>Lưu mã
+          </button>
+        </div>
+      </article>`;
+    }).join('');
+  };
+
+  async function copyText(text, okMsg) {
+    try {
+      await navigator.clipboard.writeText(text);
+      window.showToast(okMsg);
+    } catch (e) {
+      window.prompt('Sao chép thủ công:', text);
+    }
+  }
+
+  async function setOrderStatus(o, status, select) {
+    const prev = statusOf(o);
+    const payload = { status, [`timeline/${status}`]: new Date().toISOString() };
+    if (status === 'da_huy') {
+      const reason = window.prompt('Lý do hủy đơn (khách sẽ thấy trong app):', '');
+      if (reason === null) { select.value = prev; return; }
+      if (reason.trim()) payload.cancelReason = reason.trim().slice(0, 200);
+    } else if (!confirm(`Chuyển đơn của ${o.customerName || 'khách'} sang "${ORDER_STATUSES.find(s => s.key === status).label}"?`)) {
+      select.value = prev;
+      return;
+    }
+    try {
+      await update(ref(rtdb, `orders/${o.uid}/${o.orderId}`), payload);
+      o.status = status;
+      if (payload.cancelReason) o.cancelReason = payload.cancelReason;
+      window.showToast('✓ Đã cập nhật trạng thái');
+      window.renderOrderInsights();
+      window.renderOrders();
+    } catch (e) {
+      select.value = prev;
+      window.showToast('❌ Lỗi: ' + e.message, 'error');
+    }
+  }
+
+  async function saveTracking(o, card) {
+    const code = card.querySelector('[data-field=code]').value.trim();
+    const carrier = card.querySelector('[data-field=carrier]').value.trim();
+    // Đơn đặt chung giỏ thường đi chung một kiện → hỏi áp mã cho cả giỏ
+    let targets = [o];
+    const siblings = o.groupId ? allOrders.filter(x => x.groupId === o.groupId && x !== o && statusOf(x) !== 'da_huy') : [];
+    if (siblings.length && code && confirm(`Đơn này đặt chung giỏ với ${siblings.length} đơn khác. Áp cùng mã vận đơn cho cả giỏ?`)) {
+      targets = [o, ...siblings];
+    }
+    const updates = {};
+    targets.forEach(t => {
+      updates[`orders/${t.uid}/${t.orderId}/maVanDon`] = code || null;
+      updates[`orders/${t.uid}/${t.orderId}/donViVanChuyen`] = carrier || null;
+    });
+    // Có mã vận đơn = đã gửi hàng → đề nghị chuyển sang "Chờ giao hàng"
+    const toShip = code ? targets.filter(t => ['cho_xac_nhan', 'cho_lay_hang'].includes(statusOf(t))) : [];
+    const now = new Date().toISOString();
+    if (toShip.length && confirm('Chuyển trạng thái sang "Chờ giao hàng" (đã gửi cho đơn vị vận chuyển)?')) {
+      toShip.forEach(t => {
+        updates[`orders/${t.uid}/${t.orderId}/status`] = 'dang_giao';
+        updates[`orders/${t.uid}/${t.orderId}/timeline/dang_giao`] = now;
+      });
+    }
+    try {
+      await update(ref(rtdb), updates);
+      targets.forEach(t => {
+        t.maVanDon = code || undefined;
+        t.donViVanChuyen = carrier || undefined;
+        if (updates[`orders/${t.uid}/${t.orderId}/status`]) t.status = 'dang_giao';
+      });
+      window.showToast(code ? `✓ Đã lưu mã vận đơn${targets.length > 1 ? ` cho ${targets.length} đơn` : ''}` : '✓ Đã xoá mã vận đơn');
+      window.renderOrderInsights();
+      window.renderOrders();
+    } catch (e) {
+      window.showToast('❌ Lỗi: ' + e.message, 'error');
+    }
+  }
+
+  $('orders-list').addEventListener('click', (ev) => {
+    const btn = ev.target.closest('[data-oaction]');
+    if (!btn || btn.tagName === 'SELECT') return;
+    const card = btn.closest('[data-order]');
+    const o = card && findOrder(card.dataset.order);
+    if (!o) return;
+    const action = btn.dataset.oaction;
+    if (action === 'save-track') saveTracking(o, card);
+    else if (action === 'copy-code') copyText(card.querySelector('[data-field=code]').value.trim(), '✓ Đã sao chép mã vận đơn');
+    else if (action === 'copy-ship') copyText([o.customerName, o.customerPhone, o.customerAddress].filter(Boolean).join('\n'), '✓ Đã sao chép thông tin giao hàng');
+  });
+  $('orders-list').addEventListener('change', (ev) => {
+    const select = ev.target.closest('select[data-oaction=status]');
+    if (!select) return;
+    const o = findOrder(select.closest('[data-order]').dataset.order);
+    if (o && select.value !== statusOf(o)) setOrderStatus(o, select.value, select);
+  });
+
   window.renderRevenueTable = function() {
-    const tbody = document.getElementById('revenue-table');
+    const tbody = $('revenue-table');
     const sorted = [...allUsers].sort((a, b) => (b.price || 0) - (a.price || 0));
     tbody.innerHTML = sorted.map(u => {
       const revenue = (u.price || 0) * 100;
-      return `<tr><td><strong>${esc(getCustomerName(u))}</strong></td><td>${esc(fmt(u.price || 0))}</td><td style="color:var(--primary);font-weight:700;">~${esc(fmt(revenue))}</td></tr>`;
-    }).join('') || '<tr><td colspan="3" style="text-align:center;">Không có dữ liệu</td></tr>';
+      return `<tr class="hover:bg-surface-container-low/40 transition-colors">
+        <td class="py-4 px-6">${customerCell(u)}</td>
+        <td class="py-4 px-6 text-right tabular-nums whitespace-nowrap">${esc(fmt(u.price || 0))}</td>
+        <td class="py-4 px-6 text-right tabular-nums font-semibold text-primary whitespace-nowrap">~${esc(fmt(revenue))}</td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="3" class="text-center py-8 text-outline">Không có dữ liệu</td></tr>';
   };
 
-  window.openAddModal = function() {
-    document.getElementById('modal-title').textContent = 'Thêm khách hàng';
-    document.getElementById('edit-id').value = '';
-    document.getElementById('edit-name').value = '';
-    document.getElementById('edit-email').value = '';
-    document.getElementById('edit-phone').value = '';
-    document.getElementById('edit-price').value = '';
-    document.getElementById('edit-ship').value = '';
-    document.getElementById('edit-notes').value = '';
-    document.getElementById('modal-user').classList.add('open');
+  // ===== Form khách hàng: thông tin CRM + kiểu giá =====
+  let editingUser = null;
+
+  function tierInputs(prefix, values) {
+    return TIERS.map(t => `<div class="grid grid-cols-[1fr_150px] items-center gap-3">
+      <label class="text-label-sm text-on-surface-variant" for="${prefix}-${t.k}">${t.label}</label>
+      <input type="number" min="1" id="${prefix}-${t.k}" class="field text-right tabular-nums" value="${esc(values[t.k] ?? '')}" />
+    </div>`).join('');
+  }
+  function readTiers(prefix) {
+    const out = {};
+    for (const t of TIERS) {
+      const v = parseInt($(`${prefix}-${t.k}`).value);
+      if (!v || v <= 0) return null;
+      out[t.k] = v;
+    }
+    return out;
+  }
+
+  window.onPriceModeChange = function() {
+    const mode = (document.querySelector('input[name=price-mode]:checked') || {}).value;
+    ['chung', 'rieng', 'si'].forEach(m => $('panel-' + m).classList.toggle('hidden', m !== mode));
+    const hints = {
+      chung: 'Khách dùng giá chung. Khi bạn đổi giá chung ở mục Bảng giá, giá của khách này đổi theo.',
+      rieng: 'Bảng giá riêng theo chiều dài bể. Không bị ảnh hưởng khi đổi giá chung.',
+      si: 'Một giá cố định cho mọi kích thước, kèm phí ship riêng (không áp giảm giá số lượng).',
+    };
+    $('price-mode-hint').textContent = hints[mode] || '';
   };
 
-  window.editUser = async function(key) {
+  function openUserModal(user) {
+    editingUser = user;
+    const mode = user ? priceMode(user) : 'chung';
+    const hasAccount = !!(user && user.uid);
+    $('modal-title').textContent = user ? 'Chỉnh sửa khách hàng' : 'Thêm khách hàng';
+    $('edit-id').value = (user && user.id) || '';
+    $('edit-key').value = (user && user._key) || '';
+    $('edit-name').value = user ? pickValidText(user.displayName, user.dishplayname, user.name, user.fullName) : '';
+    $('edit-email').value = (user && user.email) || '';
+    $('edit-phone').value = (user && user.phone) || '';
+    $('edit-notes').value = (user && user.notes) || '';
+    $('edit-price').value = (user && user.price) || '';
+    $('edit-ship').value = (user && user.shipPrice) || '';
+
+    const g = effectiveGlobal();
+    $('panel-chung').innerHTML = `<div class="rounded-lg bg-surface-container-low p-3 grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 text-body-sm">
+      ${TIERS.map(t => `<span class="text-on-surface-variant">${t.label}</span><span class="text-right tabular-nums font-medium">${fmt(g[t.k])} ₫</span>`).join('')}</div>`;
+    const own = user && user.rtdbPrices && mode === 'rieng' ? user.rtdbPrices : g;
+    $('panel-rieng').innerHTML = tierInputs('tier', own) +
+      (user && user.rtdbPrices && user.rtdbPrices.giaSi > 0
+        ? `<p class="text-body-sm text-warn">Khách đang có giá phẳng ${fmt(user.rtdbPrices.giaSi)} ₫ cài từ app. Lưu bảng giá riêng sẽ thay thế giá này.</p>` : '');
+
+    const rieng = document.querySelector('input[name=price-mode][value=rieng]');
+    rieng.disabled = !hasAccount;
+    rieng.closest('label').title = hasAccount ? '' : 'Khách chưa có tài khoản trong app';
+    document.querySelector(`input[name=price-mode][value=${mode}]`).checked = true;
+    window.onPriceModeChange();
+    $('modal-user').classList.add('open');
+  }
+
+  window.openAddModal = function() { openUserModal(null); };
+  window.editUser = function(key) {
     const user = allUsers.find(u => u._key === key);
-    if (!user) return;
-    const customerName = pickValidText(user.displayName, user.dishplayname, user.name, user.fullName);
-    document.getElementById('modal-title').textContent = user.id ? 'Chỉnh sửa khách hàng' : 'Thêm giá sỉ cho tài khoản này';
-    document.getElementById('edit-id').value = user.id || '';
-    document.getElementById('edit-name').value = customerName;
-    document.getElementById('edit-email').value = user.email || '';
-    document.getElementById('edit-phone').value = user.phone || '';
-    document.getElementById('edit-price').value = user.price || '';
-    document.getElementById('edit-ship').value = user.shipPrice || '';
-    document.getElementById('edit-notes').value = user.notes || '';
-    document.getElementById('modal-user').classList.add('open');
+    if (user) openUserModal(user);
   };
 
   window.closeModal = function() {
-    document.getElementById('modal-user').classList.remove('open');
+    $('modal-user').classList.remove('open');
   };
+  $('modal-user').addEventListener('click', (ev) => { if (ev.target.id === 'modal-user') window.closeModal(); });
 
   window.saveUser = async function() {
-    const id = document.getElementById('edit-id').value;
-    const name = document.getElementById('edit-name').value.trim();
-    const email = document.getElementById('edit-email').value.trim();
-    const phone = document.getElementById('edit-phone').value.trim();
-    const price = parseInt(document.getElementById('edit-price').value);
-    const shipPrice = parseInt(document.getElementById('edit-ship').value) || 0;
-    const notes = document.getElementById('edit-notes').value.trim();
+    const user = editingUser;
+    const id = $('edit-id').value;
+    const name = $('edit-name').value.trim();
+    const email = $('edit-email').value.trim();
+    const phone = $('edit-phone').value.trim();
+    const notes = $('edit-notes').value.trim();
+    const mode = (document.querySelector('input[name=price-mode]:checked') || {}).value || 'chung';
 
-    if (!name || !price) {
-      window.showToast('⚠️ Tên và Giá là bắt buộc', 'error');
+    if (!name) {
+      window.showToast('⚠️ Nhập tên khách hàng', 'error');
       return;
+    }
+    let price = null, shipPrice = 0, tiers = null;
+    if (mode === 'si') {
+      price = parseInt($('edit-price').value);
+      shipPrice = parseInt($('edit-ship').value) || 0;
+      if (!price || price <= 0) { window.showToast('⚠️ Nhập giá sỉ/m²', 'error'); return; }
+    } else if (mode === 'rieng') {
+      tiers = readTiers('tier');
+      if (!tiers) { window.showToast('⚠️ Nhập đủ 5 mức giá (số lớn hơn 0)', 'error'); return; }
     }
 
     try {
-      const data = { displayName: name, name, email, phone, price, shipPrice, notes };
+      // 1. Thông tin CRM + giá sỉ (Firestore — app tra giá sỉ theo email)
+      const data = { displayName: name, name, email, phone, notes };
+      if (mode === 'si') { data.price = price; data.shipPrice = shipPrice; }
       if (id) {
+        if (mode !== 'si') { data.price = deleteField(); data.shipPrice = deleteField(); }
         await updateDoc(doc(db, 'users', id), data);
-        window.showToast('✓ Cập nhật thành công');
-      } else {
+      } else if (mode === 'si' || phone || notes || !(user && user.uid)) {
         data.createdAt = new Date();
         await addDoc(collection(db, 'users'), data);
-        window.showToast('✓ Thêm khách hàng thành công');
       }
+      // 2. Bảng giá theo bậc (Realtime DB — app đọc users/{uid}/prices)
+      if (user && user.uid) {
+        if (mode === 'rieng') await set(ref(rtdb, `users/${user.uid}/prices`), tiers);
+        else if (mode === 'chung') await set(ref(rtdb, `users/${user.uid}/prices`), tiersOnly(effectiveGlobal()));
+      }
+      window.showToast(user ? '✓ Cập nhật thành công' : '✓ Thêm khách hàng thành công');
       window.closeModal();
       window.loadUsers();
     } catch(e) {
@@ -700,44 +1554,54 @@
   };
 
   window.calculateRevenue = function() {
-    const price = parseInt(document.getElementById('calc-price').value);
-    const area = parseInt(document.getElementById('calc-area').value);
+    const price = parseInt($('calc-price').value);
+    const area = parseFloat($('calc-area').value);
     if (!price || !area || area <= 0) {
       window.showToast('⚠️ Nhập giá và diện tích', 'error');
       return;
     }
-    const total = price * area;
-    document.getElementById('calc-result').innerHTML = `
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;text-align:center;">
-        <div><strong style="display:block;font-size:12px;color:var(--muted);margin-bottom:4px;">Diện tích</strong><span style="font-size:20px;color:var(--primary);">${area} m²</span></div>
-        <div><strong style="display:block;font-size:12px;color:var(--muted);margin-bottom:4px;">Đơn giá</strong><span style="font-size:20px;color:var(--primary);">${fmt(price)}</span></div>
-        <div><strong style="display:block;font-size:12px;color:var(--muted);margin-bottom:4px;">Thành tiền</strong><span style="font-size:20px;color:var(--primary);font-weight:700;">${fmt(total)}</span></div>
-      </div>
-    `;
-    document.getElementById('calc-result').style.display = 'block';
+    const total = Math.round(price * area);
+    const cell = (label, value, strong) => `<div class="bg-surface-container-low rounded-lg p-4 text-center">
+      <span class="block text-label-sm text-outline uppercase tracking-wider mb-1">${label}</span>
+      <span class="text-headline-md ${strong ? 'text-primary' : ''}">${value}</span></div>`;
+    $('calc-result').innerHTML = `<div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      ${cell('Diện tích', `${area} m²`)}${cell('Đơn giá', `${fmt(price)} ₫`)}${cell('Thành tiền', `${fmt(total)} ₫`, true)}</div>`;
+    $('calc-result').classList.remove('hidden');
   };
 
-  window.exportUsers = function() {
-    const data = allUsers.map(u => ({ 'Tên': getCustomerName(u), 'Email': u.email, 'SĐT': u.phone, 'Giá/m²': u.price, 'Phí ship': u.shipPrice || 0, 'Ghi chú': u.notes }));
-    const ws = XLSX.utils.json_to_sheet(data);
+  function writeSheet(rows, sheetName, fileName) {
+    const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Users");
-    XLSX.writeFile(wb, "danh-sach-khach-hang.xlsx");
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    XLSX.writeFile(wb, fileName);
     window.showToast('✓ Đã xuất file');
+  }
+
+  window.exportUsers = function() {
+    writeSheet(allUsers.map(u => ({ 'Tên': getCustomerName(u), 'Email': u.email, 'SĐT': u.phone, 'Giá/m²': u.price, 'Phí ship': u.shipPrice || 0, 'Ghi chú': u.notes, 'Nguồn': u.registered ? 'App' : 'CRM' })),
+      'Users', 'danh-sach-khach-hang.xlsx');
+  };
+
+  window.exportOrders = function() {
+    if (!allOrders.length) { window.showToast('Chưa có đơn hàng để xuất', 'error'); return; }
+    writeSheet(allOrders.map(o => ({
+      'Ngày đặt': o.createdAt ? new Date(o.createdAt).toLocaleString('vi-VN') : '',
+      'Khách hàng': o.customerName || '', 'SĐT': o.customerPhone || '', 'Địa chỉ': o.customerAddress || '',
+      'Mã tranh': o.imageId || '', 'Diện tích (m²)': num(o.tongDienTich), 'Số tấm': num(o.tongSoTam),
+      'Chất liệu': o.chatLieu || '', 'Tổng tiền': num(o.tongTien), 'Giảm giá': num(o.discountTien),
+      'Trạng thái': orderLabel(o), 'Mã vận đơn': o.maVanDon || '', 'Đơn vị VC': o.donViVanChuyen || '',
+    })), 'Orders', 'don-hang.xlsx');
   };
 
   window.exportRevenue = function() {
-    const data = allUsers.map(u => ({ 'Tên': getCustomerName(u), 'Giá/m²': u.price, 'Doanh thu ước tính': (u.price || 0) * 100 }));
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Revenue");
-    XLSX.writeFile(wb, "doanh-thu.xlsx");
-    window.showToast('✓ Đã xuất file');
+    writeSheet(allUsers.map(u => ({ 'Tên': getCustomerName(u), 'Giá/m²': u.price, 'Doanh thu ước tính': (u.price || 0) * 100 })),
+      'Revenue', 'doanh-thu.xlsx');
   };
 
   // INIT
-  document.getElementById('current-time').textContent = new Date().toLocaleString('vi-VN');
-  setInterval(() => { document.getElementById('current-time').textContent = new Date().toLocaleString('vi-VN'); }, 1000);
+  const tick = () => { $('current-time').textContent = 'Thời gian thực: ' + new Date().toLocaleString('vi-VN'); };
+  tick();
+  setInterval(tick, 1000);
 </script>
 
 </body>

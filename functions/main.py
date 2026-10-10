@@ -636,3 +636,23 @@ def admin_delete_customer(req: https_fn.CallableRequest) -> dict:
             print(f"admin_delete_customer: xóa Firestore {firestore_doc_id} lỗi: {e}")
 
     return result
+
+
+@db_fn.on_value_created(
+    reference="users/{uid}",
+    region="asia-southeast1",
+)
+def on_user_created(event: db_fn.Event[Any]) -> None:
+    """Khách mới đăng ký → chép giá chung (settings/prices, admin cài trên
+    Dashboard web) vào users/{uid}/prices để app tính đúng giá chung."""
+    user = event.data
+    if not isinstance(user, dict) or user.get("prices"):
+        return
+    prices = db.reference("settings/prices").get()
+    if not isinstance(prices, dict) or not prices:
+        return
+    uid = event.params.get("uid", "?")
+    db.reference(f"users/{uid}/prices").set(
+        {k: prices[k] for k in ("p1", "p2", "p3", "p4", "p5") if k in prices}
+    )
+    print(f"Đã áp giá chung cho khách mới {uid}")
